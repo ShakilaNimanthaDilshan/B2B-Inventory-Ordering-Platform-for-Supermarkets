@@ -1,60 +1,32 @@
-// frontend/src/App.jsx
-import React from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import { AuthProvider } from "./context/AuthContext";
-import PrivateRoute from "./components/PrivateRoute";
+import AdminRoute from "./routes/AdminRoute";
+import AdminDashboard from "./pages/admin/AdminDashboard";
+import PendingUsers from "./pages/admin/PendingUsers";
 
-import Navbar from "./components/Navbar";
-
-import HomePage from "./pages/HomePage";
-import LoginPage from "./pages/LoginPage";
-import RegisterPage from "./pages/RegisterPage";
-import AdminDashboard from "./pages/AdminDashboard";
-import AdminPendingUsersPage from "./pages/AdminPendingUsersPage";
-import SupplierDashboard from "./pages/SupplierDashboard";
-import SupermarketDashboard from "./pages/SupermarketDashboard";
-import PendingApprovalPage from "./pages/PendingApprovalPage";
-
-const App = () => {
+function App() {
   return (
-    <AuthProvider>
-      <Router>
-        <Navbar />
-        <Routes>
-          {/* Public routes */}
-          <Route path="/" element={<HomePage />} />
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/register" element={<RegisterPage />} />
-          <Route path="/pending" element={<PendingApprovalPage />} />
+    <Router>
+      <Routes>
+        <Route
+          path="/admin"
+          element={
+            <AdminRoute>
+              <AdminDashboard />
+            </AdminRoute>
+          }
+        />
 
-          {/* 🔐 Admin-only routes */}
-          <Route element={<PrivateRoute allowedRoles={["admin"]} />}>
-            <Route path="/admin/dashboard" element={<AdminDashboard />} />
-            <Route
-              path="/admin/pending-users"
-              element={<AdminPendingUsersPage />}
-            />
-          </Route>
-
-          {/* 🔐 Supplier-only */}
-          <Route element={<PrivateRoute allowedRoles={["supplier"]} />}>
-            <Route path="/supplier/dashboard" element={<SupplierDashboard />} />
-          </Route>
-
-          {/* 🔐 Supermarket-only */}
-          <Route element={<PrivateRoute allowedRoles={["supermarket"]} />}>
-            <Route
-              path="/supermarket/dashboard"
-              element={<SupermarketDashboard />}
-            />
-          </Route>
-
-          {/* Fallback */}
-          <Route path="*" element={<HomePage />} />
-        </Routes>
-      </Router>
-    </AuthProvider>
+        <Route
+          path="/admin/pending-users"
+          element={
+            <AdminRoute>
+              <PendingUsers />
+            </AdminRoute>
+          }
+        />
+      </Routes>
+    </Router>
   );
-};
+}
 
 export default App;

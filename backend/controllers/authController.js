@@ -12,20 +12,16 @@ const registerUser = async (req, res, next) => {
       return res.status(400).json({ message: "All fields are required" });
     }
 
-    // Block admin registration via API
-    if (role === "admin") {
-      return res
-        .status(403)
-        .json({ message: "Admin registration is not allowed" });
-    }
-
-    if (!["supplier", "supermarket"].includes(role)) {
-      return res.status(400).json({ message: "Invalid role" });
-    }
-
     const existingUser = await User.findOne({ email });
     if (existingUser) {
       return res.status(400).json({ message: "Email already registered" });
+    }
+
+    let isApproved = false;
+
+    // Only admins are auto-approved
+    if (role === "admin") {
+      isApproved = true;
     }
 
     const user = await User.create({
@@ -33,11 +29,11 @@ const registerUser = async (req, res, next) => {
       email,
       password,
       role,
-      isApproved: false,
+      isApproved,
     });
 
     res.status(201).json({
-      message: "User registered successfully. Pending admin approval.",
+      message: "User registered successfully",
       user: {
         id: user._id,
         name: user.name,
@@ -47,7 +43,7 @@ const registerUser = async (req, res, next) => {
       },
     });
   } catch (error) {
-    next(error); // ✅ next exists because of (req, res, next)
+    next(error);
   }
 };
 
@@ -57,22 +53,14 @@ const loginUser = async (req, res, next) => {
   try {
     const { email, password } = req.body;
 
-    if (!email || !password) {
-      return res
-        .status(400)
-        .json({ message: "Email and password are required" });
-    }
-
     const user = await User.findOne({ email });
 
     if (!user || !(await user.matchPassword(password))) {
       return res.status(401).json({ message: "Invalid email or password" });
     }
 
-    if (
-      (user.role === "supplier" || user.role === "supermarket") &&
-      !user.isApproved
-    ) {
+    // If not approved and not admin
+    if ((user.role === "supplier" || user.role === "supermarket") && !user.isApproved) {
       return res
         .status(403)
         .json({ message: "Account pending admin approval" });
@@ -91,7 +79,7 @@ const loginUser = async (req, res, next) => {
       },
     });
   } catch (error) {
-    next(error); // ✅
+    next(error);
   }
 };
 
@@ -100,12 +88,9 @@ const loginUser = async (req, res, next) => {
 const getMe = async (req, res, next) => {
   try {
     const user = await User.findById(req.user.id).select("-password");
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
-    }
     res.json(user);
   } catch (error) {
-    next(error); // ✅
+    next(error);
   }
 };
 
