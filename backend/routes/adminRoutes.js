@@ -6,31 +6,30 @@ const {
   getPendingUsers,
   approveUser,
   rejectUser,
+  getStats,
+  getUsers,
+  getUsersReport,
 } = require("../controllers/adminController");
+
 const { protect, authorizeRoles } = require("../middleware/authMiddleware");
 
-// GET /api/admin/pending-users
-router.get(
-  "/pending-users",
-  protect,
-  authorizeRoles("admin"),
-  getPendingUsers
-);
+// All /api/admin/* are admin-only
+router.use(protect, authorizeRoles("admin"));
 
-// PATCH /api/admin/approve/:userId
-router.patch(
-  "/approve/:userId",
-  protect,
-  authorizeRoles("admin"),
-  approveUser
-);
+// 📊 Dashboard stats
+router.get("/stats", getStats);
 
-// PATCH /api/admin/reject/:userId
-router.patch(
-  "/reject/:userId",
-  protect,
-  authorizeRoles("admin"),
-  rejectUser
-);
+// Pending users
+router.get("/pending-users", getPendingUsers);
+
+// Approve / Reject
+router.patch("/approve/:userId", approveUser);
+router.patch("/reject/:userId", rejectUser);
+
+// Manage users: ?role=supplier&status=approved
+router.get("/users", getUsers);
+
+// CSV report
+router.get("/users-report", getUsersReport);
 
 module.exports = router;

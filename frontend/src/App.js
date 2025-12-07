@@ -14,6 +14,8 @@ import AdminPendingUsersPage from "./pages/AdminPendingUsersPage";
 import SupplierDashboard from "./pages/SupplierDashboard";
 import SupermarketDashboard from "./pages/SupermarketDashboard";
 import PendingApprovalPage from "./pages/PendingApprovalPage";
+import AdminUsersPage from "./pages/AdminUsersPage";
+
 
 const App = () => {
   return (
@@ -34,6 +36,7 @@ const App = () => {
               path="/admin/pending-users"
               element={<AdminPendingUsersPage />}
             />
+            <Route path="/admin/users" element={<AdminUsersPage />} />
           </Route>
 
           {/* 🔐 Supplier-only */}

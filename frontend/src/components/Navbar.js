@@ -65,6 +65,12 @@ const Navbar = () => {
                 >
                   Pending Users
                 </Link>
+                <Link
+                  to="/admin/users"
+                  style={{ color: "#fff", textDecoration: "none" }}
+                >
+                  Manage Users
+                </Link>
               </>
             )}
 

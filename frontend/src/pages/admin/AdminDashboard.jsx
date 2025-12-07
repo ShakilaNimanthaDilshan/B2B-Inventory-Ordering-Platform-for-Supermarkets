@@ -1,103 +1,136 @@
+// frontend/src/pages/AdminDashboard.jsx
 import React, { useEffect, useState } from "react";
-import api from "../../api/axios";
-import { Link } from "react-router-dom";
-import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  Tooltip,
-  CartesianGrid,
-  ResponsiveContainer,
-} from "recharts";
+import { useNavigate } from "react-router-dom";
+import api from "../api/axiosInstance";
 
 const AdminDashboard = () => {
-  const [summary, setSummary] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
+  const [stats, setStats] = useState(null);
+  const [loadingStats, setLoadingStats] = useState(false);
+  const [error, setError] = useState("");
 
-  // Fake chart data for now (we can wire real data later)
-  const [ordersData, setOrdersData] = useState([
-    { date: "Mon", orders: 10 },
-    { date: "Tue", orders: 15 },
-    { date: "Wed", orders: 8 },
-    { date: "Thu", orders: 20 },
-    { date: "Fri", orders: 12 },
-  ]);
+  const fetchStats = async () => {
+    try {
+      setLoadingStats(true);
+      setError("");
+      const res = await api.get("/admin/stats");
+      setStats(res.data);
+    } catch (err) {
+      setError(err.response?.data?.message || "Failed to load stats");
+    } finally {
+      setLoadingStats(false);
+    }
+  };
+
+  const downloadReport = async () => {
+    try {
+      const res = await api.get("/admin/users-report", {
+        responseType: "blob",
+      });
+
+      const url = window.URL.createObjectURL(new Blob([res.data]));
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", "users-report.csv");
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    } catch (err) {
+      alert(err.response?.data?.message || "Failed to download report");
+    }
+  };
 
   useEffect(() => {
-    const fetchSummary = async () => {
-      try {
-        const res = await api.get("/admin/dashboard/summary");
-        setSummary(res.data);
-      } catch (err) {
-        console.error("Dashboard summary error:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchSummary();
+    fetchStats();
   }, []);
 
-  if (loading) return <div style={{ padding: 20 }}>Loading admin dashboard...</div>;
-
   return (
-    <div style={{ padding: 20 }}>
-      <h1>Admin Dashboard</h1>
+    <div style={{ padding: "20px" }}>
+      <h2>Admin Dashboard</h2>
+      <p>Welcome, Admin. From here you can manage users and view system stats.</p>
 
-      {/* Quick links */}
-      <div style={{ margin: "16px 0" }}>
-        <Link to="/admin/pending-users" style={{ marginRight: 12 }}>
-          View Pending Users
-        </Link>
-        {/* Later: /admin/suppliers, /admin/supermarkets, /admin/reports */}
-      </div>
+      {loadingStats && <p>Loading stats...</p>}
+      {error && <p style={{ color: "red" }}>{error}</p>}
 
-      {/* Summary cards */}
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
-          gap: 16,
-          marginBottom: 24,
-        }}
-      >
-        <SummaryCard title="Approved Users" value={summary?.totalUsers || 0} />
-        <SummaryCard title="Pending Users" value={summary?.pendingUsers || 0} />
-        <SummaryCard title="Suppliers" value={summary?.totalSuppliers || 0} />
-        <SummaryCard title="Supermarkets" value={summary?.totalSupermarkets || 0} />
-        <SummaryCard title="Total Orders" value={summary?.totalOrders || 0} />
-      </div>
+      {stats && (
+        <div
+          style={{
+            display: "flex",
+            gap: "20px",
+            marginTop: "20px",
+            flexWrap: "wrap",
+          }}
+        >
+          <div
+            style={{
+              border: "1px solid #ccc",
+              padding: "10px 15px",
+              minWidth: "180px",
+            }}
+          >
+            <h4>Total Users</h4>
+            <p>{stats.totalUsers}</p>
+          </div>
 
-      {/* Orders chart */}
-      <div style={{ height: 300, background: "#f7f7f7", padding: 16, borderRadius: 8 }}>
-        <h3>Orders Overview</h3>
-        <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={ordersData}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="date" />
-            <YAxis />
-            <Tooltip />
-            <Line type="monotone" dataKey="orders" strokeWidth={2} />
-          </LineChart>
-        </ResponsiveContainer>
+          <div
+            style={{
+              border: "1px solid #ccc",
+              padding: "10px 15px",
+              minWidth: "180px",
+            }}
+          >
+            <h4>Suppliers</h4>
+            <p>{stats.totalSuppliers}</p>
+          </div>
+
+          <div
+            style={{
+              border: "1px solid #ccc",
+              padding: "10px 15px",
+              minWidth: "180px",
+            }}
+          >
+            <h4>Supermarkets</h4>
+            <p>{stats.totalSupermarkets}</p>
+          </div>
+
+          <div
+            style={{
+              border: "1px solid #ccc",
+              padding: "10px 15px",
+              minWidth: "180px",
+            }}
+          >
+            <h4>Pending Users</h4>
+            <p>{stats.pendingUsers}</p>
+          </div>
+
+          <div
+            style={{
+              border: "1px solid #ccc",
+              padding: "10px 15px",
+              minWidth: "180px",
+            }}
+          >
+            <h4>Approved Users</h4>
+            <p>{stats.approvedUsers}</p>
+          </div>
+        </div>
+      )}
+
+      <div style={{ marginTop: "30px", display: "flex", gap: "10px" }}>
+        <button onClick={() => navigate("/admin/pending-users")}>
+          Manage Pending Users
+        </button>
+
+        <button onClick={downloadReport}>Download Users Report (CSV)</button>
+
+        <button onClick={() => navigate("/admin/users")}>
+          Manage Suppliers & Supermarkets
+        </button>
       </div>
     </div>
   );
 };
-
-const SummaryCard = ({ title, value }) => (
-  <div
-    style={{
-      padding: 16,
-      borderRadius: 8,
-      background: "#f5f5f5",
-      boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
-    }}
-  >
-    <div style={{ fontSize: 14, color: "#555" }}>{title}</div>
-    <div style={{ fontSize: 24, fontWeight: "bold" }}>{value}</div>
-  </div>
-);
 
 export default AdminDashboard;
