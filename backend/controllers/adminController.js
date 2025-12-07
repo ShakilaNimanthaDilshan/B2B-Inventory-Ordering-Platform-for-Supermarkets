@@ -2,7 +2,6 @@
 const User = require("../models/User");
 
 // GET /api/admin/pending-users
-// Private (admin)
 const getPendingUsers = async (req, res, next) => {
   try {
     const users = await User.find({ isApproved: false }).select("-password");
@@ -13,7 +12,6 @@ const getPendingUsers = async (req, res, next) => {
 };
 
 // PATCH /api/admin/approve/:userId
-// Private (admin)
 const approveUser = async (req, res, next) => {
   try {
     const { userId } = req.params;
@@ -39,7 +37,32 @@ const approveUser = async (req, res, next) => {
   }
 };
 
+// PATCH /api/admin/reject/:userId
+// For simplicity: delete the user
+const rejectUser = async (req, res, next) => {
+  try {
+    const { userId } = req.params;
+
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    // extra safety: don't allow rejecting admin
+    if (user.role === "admin") {
+      return res
+        .status(400)
+        .json({ message: "Cannot reject admin user from here" });
+    }
+
+    await user.deleteOne();
+
+    res.json({ message: "User rejected and removed" });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   getPendingUsers,
   approveUser,
+  rejectUser,
 };
