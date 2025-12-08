@@ -8,6 +8,8 @@ const authRoutes = require("./routes/authRoutes");
 const adminRoutes = require("./routes/adminRoutes");
 const errorHandler = require("./middleware/errorMiddleware");
 const path = require("path");
+const productRoutes = require("./routes/productRoutes");
+const orderRoutes = require("./routes/orderRoutes");
 
 dotenv.config();
 connectDB();
@@ -31,6 +33,12 @@ app.get("/", (req, res) => {
 
 // Error handler
 app.use(errorHandler);
+
+//product routes
+app.use("/api/products", productRoutes);
+
+//FOR INCOMING ORDER
+app.use("/api/orders", orderRoutes);
 
 const PORT = process.env.PORT || 5000;
 
