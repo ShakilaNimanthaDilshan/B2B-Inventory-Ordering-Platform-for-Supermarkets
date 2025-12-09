@@ -11,11 +11,11 @@ import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
 import AdminDashboard from "./pages/AdminDashboard";
 import AdminPendingUsersPage from "./pages/AdminPendingUsersPage";
-import SupplierDashboard from "./pages/SupplierDashboard";
+import SupplierDashboard from "./pages/supplier/SupplierDashboard";
 import SupermarketDashboard from "./pages/SupermarketDashboard";
 import PendingApprovalPage from "./pages/PendingApprovalPage";
 import AdminUsersPage from "./pages/AdminUsersPage";
-
+import AddProduct from "./pages/supplier/AddProduct";
 
 const App = () => {
   return (
@@ -42,6 +42,7 @@ const App = () => {
           {/* 🔐 Supplier-only */}
           <Route element={<PrivateRoute allowedRoles={["supplier"]} />}>
             <Route path="/supplier/dashboard" element={<SupplierDashboard />} />
+            <Route path="/supplier/add-product" element={<AddProduct />} />
           </Route>
 
           {/* 🔐 Supermarket-only */}
