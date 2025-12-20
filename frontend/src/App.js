@@ -20,7 +20,8 @@ import SupplierDashboard from "./pages/supplier/SupplierDashboard";
 import SupermarketDashboard from "./pages/SupermarketDashboard";
 import PendingApprovalPage from "./pages/PendingApprovalPage";
 import AdminUsersPage from "./pages/AdminUsersPage";
-import AddProduct from "./pages/supplier/AddProduct";
+
+import ViewProducts from "./pages/supplier/ViewProducts";
 
 //This USe to Hide Navigation bar for tha page that dosent need it
 const MainLayout = () => {
@@ -78,8 +79,8 @@ const App = () => {
               path="/supplier/dashboard"
               element={<SupplierDashboard />}
             />
-            <Route path="/supplier/add-product" element={<AddProduct />} />
-            {/* later: /supplier/products, /supplier/orders, etc. */}
+            
+            <Route path="/supplier/products" element={<ViewProducts />} />
           </Route>
         </Routes>
       </Router>

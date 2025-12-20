@@ -31,14 +31,14 @@ app.get("/", (req, res) => {
   res.send("API is running...");
 });
 
-// Error handler
-app.use(errorHandler);
-
 //product routes
 app.use("/api/products", productRoutes);
 
 //FOR INCOMING ORDER
 app.use("/api/orders", orderRoutes);
+
+// Error handler
+app.use(errorHandler);
 
 const PORT = process.env.PORT || 5000;
 
