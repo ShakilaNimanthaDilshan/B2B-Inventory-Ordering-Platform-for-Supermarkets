@@ -128,74 +128,147 @@
   margin: 0 0 20px 0;
 }
 
-/* Quick Actions */
+/* ================= QUICK ACTIONS (LEFT + COLORED) ================= */
 .quick-actions {
-  background: white;
-  border-radius: 12px;
+  background: #fff;
   padding: 24px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  margin-bottom: 32px;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  margin-bottom: 24px;
+
+  /* Make sure title is top and buttons are below */
+  display: block !important;
 }
 
-.section-title {
-  font-size: 18px;
-  font-weight: 600;
-  color: #111827;
-  margin: 0 0 20px 0;
-}
-
-.action-buttons {
-  display: flex;
-  gap: 12px;
-  flex-wrap: wrap;
-}
-
-.action-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 12px 24px;
-  border-radius: 8px;
+.quick-actions .section-title {
+  display: block !important;
+  width: 100% !important;
   font-size: 14px;
   font-weight: 600;
+  color: #111827;
+  margin: 0 0 14px 0 !important;
+}
+
+.quick-actions .action-buttons {
+  width: 100% !important;
+  display: flex !important;
+  justify-content: flex-start !important; /* LEFT */
+  align-items: center !important;
+  flex-wrap: wrap !important;
+  gap: 14px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+/* Pill base */
+.quick-actions .qa-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 18px;
+  border-radius: 12px;
+   min-height: 44px;
+  border: 1px solid transparent;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.03);
   cursor: pointer;
-  transition: all 0.2s;
-  border: none;
-  outline: none;
+  transition: transform 0.15s ease, background 0.15s ease;
+  margin-left: 0 !important;
 }
 
-.action-btn-primary {
-  background: linear-gradient(135deg, #3aed99 0%, hsl(133, 40%, 40%) 100%);
-  color: white;
+/* icon bubble */
+.quick-actions .qa-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 9999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
 }
 
-.action-btn-primary:hover {
-  background: linear-gradient(135deg, #6d28d9 0%, #5b21b6 100%);
+/* text + chevron */
+.quick-actions .qa-text {
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.quick-actions .qa-chevron {
+  display: flex;
+  align-items: center;
+}
+
+/* ----- COLOR VARIANTS (use qa-green / qa-blue / qa-outline in JSX) ----- */
+/* ----- GRADIENT VARIANTS (use qa-green / qa-blue / qa-outline in JSX) ----- */
+.qa-green {
+  background: linear-gradient(135deg, #22c55e, #10b981) !important;
+  color: #fff !important;
+  border: none !important;
+}
+
+.qa-blue {
+  background: linear-gradient(135deg, #60a5fa, #2563eb) !important;
+  color: #fff !important;
+  border: none !important;
+}
+
+.qa-outline {
+  background: linear-gradient(135deg, #a1a1aa, #6b7280) !important; /* gray gradient */
+  color: #fff !important;
+  border: none !important;
+}
+
+/* Make icons look good inside gradient */
+.qa-green .qa-icon,
+.qa-blue .qa-icon,
+.qa-outline .qa-icon {
+  background: rgba(255, 255, 255, 0.18) !important;
+  color: #fff !important;
+}
+
+.qa-green .qa-chevron,
+.qa-blue .qa-chevron,
+.qa-outline .qa-chevron {
+  color: rgba(255, 255, 255, 0.85) !important;
+}
+
+/* Hover */
+.qa-green:hover,
+.qa-blue:hover,
+.qa-outline:hover {
+  filter: brightness(0.95);
+}
+
+/* icon bubble styles for variants */
+.qa-green .qa-icon,
+.qa-blue .qa-icon {
+  background: rgba(255,255,255,0.18) !important;
+  color: #fff !important;
+}
+
+.qa-outline .qa-icon {
+  background: #f3f4f6 !important;
+  color: #111827 !important;
+}
+
+/* chevron colors */
+.qa-green .qa-chevron,
+.qa-blue .qa-chevron {
+  color: rgba(255,255,255,0.8) !important;
+}
+
+.qa-outline .qa-chevron {
+  color: #9ca3af !important;
+}
+
+/* hover */
+.quick-actions .qa-pill:hover {
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3);
 }
 
-.action-btn-secondary {
-  background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
-  color: white;
-}
-
-.action-btn-secondary:hover {
-  background: linear-gradient(135deg, #6d28d9 0%, #5b21b6 100%);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3);
-}
-
-.action-btn-outline {
-  background: white;
-  color: #6d28d9;
-  border: 2px solid #e5e7eb;
-}
-
-.action-btn-outline:hover {
-  border-color: #7c3aed;
-  background: #f9fafb;
-}
+.qa-green:hover { background: #059669 !important; }
+.qa-blue:hover { background: #2563eb !important; }
+.qa-outline:hover { background: #f9fafb !important; border-color: #d1d5db !important; }
 
 /* Low Stock Section */
 .low-stock-section {
@@ -331,11 +404,12 @@
 
   .action-buttons {
     flex-direction: column;
+    align-items: flex-start;
   }
 
-  .action-btn {
+  .quick-actions .qa-pill {
     width: 100%;
-    justify-content: center;
+    justify-content: space-between;
   }
 
   .products-table {

@@ -16,12 +16,12 @@ import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
 import AdminDashboard from "./pages/AdminDashboard";
 import AdminPendingUsersPage from "./pages/AdminPendingUsersPage";
-import SupplierDashboard from "./pages/supplier/SupplierDashboard";
+import SupplierDashboard from "./pages/supplier/DashboardPage/SupplierDashboard";
 import SupermarketDashboard from "./pages/SupermarketDashboard";
 import PendingApprovalPage from "./pages/PendingApprovalPage";
 import AdminUsersPage from "./pages/AdminUsersPage";
 
-import ViewProducts from "./pages/supplier/ViewProducts";
+import ViewProducts from "./pages/supplier/ProductPage/ViewProducts";
 
 //This USe to Hide Navigation bar for tha page that dosent need it
 const MainLayout = () => {

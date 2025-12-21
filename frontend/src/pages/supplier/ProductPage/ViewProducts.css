@@ -110,6 +110,9 @@
 }
 
 /* --- Table (List View) --- */
+
+
+
 .products-table-container {
   overflow-x: auto;
   width: 100%;
@@ -132,6 +135,7 @@
   letter-spacing: 0.05em;
   background: transparent;
 }
+
 
 .products-table tbody tr {
   background: #ffffff;
@@ -225,20 +229,26 @@
 
 .category-tag { color: #3b82f6; font-weight: 500; font-size: 13px; }
 
-/* --- Table Actions (FIXED: Horizontal) --- */
-.action-cell { 
-  min-width: 140px; 
-  text-align: right; 
+
+/* --- Table Actions  --- */
+.products-table th.action-head {
+  text-align: center;
 }
 
-.action-buttons {
+.action-cell {
+  min-width: 120px;        
+  text-align: center;      
+  padding-right: 24px;     
+}
+
+.action-cell .action-buttons {
   display: flex;
-  flex-direction: row; /* Forces Horizontal */
-  justify-content: flex-end; 
+  justify-content: center; 
   align-items: center;
-  gap: 8px;
+  gap: 10px;
 }
 
+/* icon buttons */
 .action-btn {
   width: 32px;
   height: 32px;
@@ -248,17 +258,24 @@
   background: transparent;
   border: none;
   border-radius: 6px;
-  color: #64748b;
+  color: #94a3b8;
   cursor: pointer;
   transition: all 0.2s;
   padding: 0;
 }
 
-.action-btn svg { width: 18px; height: 18px; stroke-width: 2; }
+.action-btn svg {
+  width: 18px;
+  height: 18px;
+  stroke-width: 1.8;
+}
+
+/* hover */
 .action-btn:hover { background-color: #f1f5f9; color: #0f172a; }
 .action-btn.view:hover { color: #3b82f6; background: #eff6ff; }
 .action-btn.edit:hover { color: #10b981; background: #ecfdf5; }
 .action-btn.delete:hover { color: #ef4444; background: #fef2f2; }
+
 
 
 /* --- GRID VIEW (UPDATED: Professional Cards) --- */
@@ -378,7 +395,6 @@
   border-color: #10b981;
   color: #059669;
 }
-
 
 
 

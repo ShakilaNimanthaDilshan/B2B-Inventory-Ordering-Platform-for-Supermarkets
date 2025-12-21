@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { useLocation } from "react-router-dom";
-import SupplierSidebar from "./Suppliersidebar";
-import SupplierTopbar from "./SupplierTopbar";
-import axios from "../../api/axiosInstance";
+import SupplierSidebar from "../Suppliersidebar";
+import SupplierTopbar from "../SupplierTopbar";
+import axios from "../../../api/axiosInstance";
 import "./ViewProducts.css";
 
 const ViewProducts = () => {
@@ -295,7 +295,7 @@ const ViewProducts = () => {
                         ))}
                       </select>
                     </div>
-                    
+
                     <div className="filter-group">
                       <label>Status</label>
                       <select
@@ -316,7 +316,6 @@ const ViewProducts = () => {
                       Clear All Filters
                     </button>
                   </div>
-                  
                 )}
               </div>
             </div>
@@ -360,7 +359,7 @@ const ViewProducts = () => {
                     <th>Category</th>
                     <th>Stock</th>
                     <th>Update</th>
-                    <th>Action</th>
+                    <th className="action-head">Action</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -419,11 +418,14 @@ const ViewProducts = () => {
                       {/* --- THIS IS THE UPDATED ACTION CELL --- */}
                       <td className="action-cell">
                         <div className="action-buttons">
+                          {/* View / Info Icon */}
                           <button
                             className="action-btn view"
                             title="View Details"
                           >
                             <svg
+                              width="24"
+                              height="24"
                               viewBox="0 0 24 24"
                               fill="none"
                               stroke="currentColor"
@@ -436,12 +438,16 @@ const ViewProducts = () => {
                               <line x1="12" y1="8" x2="12.01" y2="8"></line>
                             </svg>
                           </button>
+
+                          {/* Edit Icon */}
                           <button
                             className="action-btn edit"
                             onClick={() => openEditModal(product)}
                             title="Edit"
                           >
                             <svg
+                              width="24"
+                              height="24"
                               viewBox="0 0 24 24"
                               fill="none"
                               stroke="currentColor"
@@ -453,12 +459,16 @@ const ViewProducts = () => {
                               <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
                             </svg>
                           </button>
+
+                          {/* Delete Icon */}
                           <button
                             className="action-btn delete"
                             onClick={() => handleDelete(product._id)}
                             title="Delete"
                           >
                             <svg
+                              width="24"
+                              height="24"
                               viewBox="0 0 24 24"
                               fill="none"
                               stroke="currentColor"
