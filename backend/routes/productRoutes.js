@@ -1,7 +1,8 @@
 // backend/routes/productRoutes.js
 const express = require("express");
 const router = express.Router();
-const upload = require("../middleware/uploadMiddleware"); // multer
+
+const { protect, authorizeRoles } = require("../middleware/authMiddleware");
 
 const {
   createProduct,
@@ -10,52 +11,29 @@ const {
   getProductById,
   updateProduct,
   deleteProduct,
-  getDashboardStats,
 } = require("../controllers/productController");
 
-const { protect, authorizeRoles } = require("../middleware/authMiddleware");
+// SUPERMARKET: get products (district filtered)
+router.get("/", protect, authorizeRoles("supermarket"), getAllProducts);
 
-// GET /api/products        → list all active products (for supermarkets)
-router.get("/", getAllProducts);
+// SUPPLIER: create product
+router.post("/", protect, authorizeRoles("supplier"), createProduct);
 
-//dashboard data route
+// SUPPLIER: own products
 router.get(
-  "/dashboard-stats",
+  "/my-products",
   protect,
   authorizeRoles("supplier"),
-  getDashboardStats
+  getMyProducts
 );
 
-// GET /api/products/my-products       supplier's own products
-router.get("/my-products", protect, authorizeRoles("supplier"), getMyProducts);
+// GET product by ID
+router.get("/:id", protect, getProductById);
 
-// GET /api/products/:id               get single product by id (public)
-router.get("/:id", getProductById);
+// UPDATE product
+router.patch("/:id", protect, updateProduct);
 
-// POST /api/products                  create product (with image, supplier only)
-router.post(
-  "/",
-  protect,
-  authorizeRoles("supplier"),
-  upload.single("image"),
-  createProduct
-);
-
-// PATCH /api/products/:id             update product (supplier owner or admin)
-router.patch(
-  "/:id",
-  protect,
-  authorizeRoles("supplier", "admin"),
-  upload.single("image"),
-  updateProduct
-);
-
-// DELETE /api/products/:id           delete product (supplier owner or admin)
-router.delete(
-  "/:id",
-  protect,
-  authorizeRoles("supplier", "admin"),
-  deleteProduct
-);
+// DELETE product
+router.delete("/:id", protect, deleteProduct);
 
 module.exports = router;
