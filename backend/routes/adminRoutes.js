@@ -13,31 +13,53 @@ const {
   getUsersReport,
 } = require("../controllers/adminController");
 
-const { protect, authorizeRoles } = require("../middleware/authMiddleware");
+// ✅ STEP 3 — Correct middleware imports
+const { protect, adminOnly } = require("../middleware/authMiddleware");
 
-// 🔒 All /api/admin/* routes are ADMIN only
-router.use(protect, authorizeRoles("admin"));
-
+// ===============================
 // 📊 Dashboard stats
-router.get("/stats", getStats);
+// ===============================
+router.get("/stats", protect, adminOnly, getStats);
 
+// ===============================
 // ⏳ Pending users
-router.get("/pending-users", getPendingUsers);
+// ===============================
+router.get("/pending-users", protect, adminOnly, getPendingUsers);
 
+// ===============================
 // ✅ Approve / ❌ Reject users
-router.patch("/approve/:userId", approveUser);
-router.patch("/reject/:userId", rejectUser);
+// ===============================
+router.patch("/approve/:userId", protect, adminOnly, approveUser);
+router.patch("/reject/:userId", protect, adminOnly, rejectUser);
 
-// 👥 Manage users: ?role=supplier&status=approved&status=active
-router.get("/users", getUsers);
+// ===============================
+// 👥 Manage users
+// ===============================
+router.get("/users", protect, adminOnly, getUsers);
 
+// ===============================
 // 🚫 Deactivate user
-router.put("/users/:id/deactivate", deactivateUser);
+// ===============================
+router.put(
+  "/users/:id/deactivate",
+  protect,
+  adminOnly,
+  deactivateUser
+);
 
+// ===============================
 // ♻️ Activate user
-router.put("/users/:id/activate", activateUser);
+// ===============================
+router.put(
+  "/users/:id/activate",
+  protect,
+  adminOnly,
+  activateUser
+);
 
+// ===============================
 // 📄 CSV report
-router.get("/users-report", getUsersReport);
+// ===============================
+router.get("/users-report", protect, adminOnly, getUsersReport);
 
 module.exports = router;
