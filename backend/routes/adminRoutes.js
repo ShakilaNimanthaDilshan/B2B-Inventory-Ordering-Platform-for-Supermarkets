@@ -6,6 +6,8 @@ const {
   getPendingUsers,
   approveUser,
   rejectUser,
+  deactivateUser,
+  activateUser,
   getStats,
   getUsers,
   getUsersReport,
@@ -13,23 +15,29 @@ const {
 
 const { protect, authorizeRoles } = require("../middleware/authMiddleware");
 
-// All /api/admin/* are admin-only
+// 🔒 All /api/admin/* routes are ADMIN only
 router.use(protect, authorizeRoles("admin"));
 
 // 📊 Dashboard stats
 router.get("/stats", getStats);
 
-// Pending users
+// ⏳ Pending users
 router.get("/pending-users", getPendingUsers);
 
-// Approve / Reject
+// ✅ Approve / ❌ Reject users
 router.patch("/approve/:userId", approveUser);
 router.patch("/reject/:userId", rejectUser);
 
-// Manage users: ?role=supplier&status=approved
+// 👥 Manage users: ?role=supplier&status=approved&status=active
 router.get("/users", getUsers);
 
-// CSV report
+// 🚫 Deactivate user
+router.put("/users/:id/deactivate", deactivateUser);
+
+// ♻️ Activate user
+router.put("/users/:id/activate", activateUser);
+
+// 📄 CSV report
 router.get("/users-report", getUsersReport);
 
 module.exports = router;

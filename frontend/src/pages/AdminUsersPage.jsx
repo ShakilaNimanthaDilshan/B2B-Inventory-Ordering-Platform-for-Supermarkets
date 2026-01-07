@@ -1,4 +1,3 @@
-// frontend/src/pages/AdminUsersPage.jsx
 import React, { useEffect, useState } from "react";
 import api from "../api/axiosInstance";
 
@@ -9,6 +8,7 @@ const AdminUsersPage = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
+  // 🔄 Fetch users
   const fetchUsers = async () => {
     try {
       setLoading(true);
@@ -27,6 +27,38 @@ const AdminUsersPage = () => {
     }
   };
 
+  // 🚫 Deactivate user
+  const handleDeactivate = async (userId) => {
+    const confirmRemove = window.confirm(
+      "Are you sure you want to remove this user's access?"
+    );
+    if (!confirmRemove) return;
+
+    try {
+      await api.put(`/admin/users/${userId}/deactivate`);
+      alert("User access removed successfully");
+      fetchUsers();
+    } catch (error) {
+      alert(error.response?.data?.message || "Failed to deactivate user");
+    }
+  };
+
+  // ♻️ Activate user
+  const handleActivate = async (userId) => {
+    const confirmActivate = window.confirm(
+      "Are you sure you want to re-activate this user?"
+    );
+    if (!confirmActivate) return;
+
+    try {
+      await api.put(`/admin/users/${userId}/activate`);
+      alert("User re-activated successfully");
+      fetchUsers();
+    } catch (error) {
+      alert(error.response?.data?.message || "Failed to activate user");
+    }
+  };
+
   useEffect(() => {
     fetchUsers();
     // eslint-disable-next-line
@@ -34,11 +66,12 @@ const AdminUsersPage = () => {
 
   return (
     <div className="admin-page">
-      <h2 className="admin-header-title">Manage Suppliers &amp; Supermarkets</h2>
+      <h2 className="admin-header-title">Manage Suppliers & Supermarkets</h2>
       <p className="admin-header-subtitle">
-        Filter and view registered suppliers, supermarkets, and admins.
+        View, deactivate, and reactivate system users.
       </p>
 
+      {/* Filters */}
       <div className="admin-filter-row">
         <div>
           <label>Role:</label>
@@ -85,9 +118,12 @@ const AdminUsersPage = () => {
                 <th>Email</th>
                 <th>Role</th>
                 <th>Approved</th>
+                <th>Status</th>
                 <th>Created At</th>
+                <th>Actions</th>
               </tr>
             </thead>
+
             <tbody>
               {users.map((u) => (
                 <tr key={u._id}>
@@ -95,7 +131,36 @@ const AdminUsersPage = () => {
                   <td>{u.email}</td>
                   <td>{u.role}</td>
                   <td>{u.isApproved ? "Yes" : "No"}</td>
+
+                  <td>
+                    {u.isActive ? (
+                      <span className="badge badge-success">Active</span>
+                    ) : (
+                      <span className="badge badge-danger">Inactive</span>
+                    )}
+                  </td>
+
                   <td>{new Date(u.createdAt).toLocaleString()}</td>
+
+                  <td>
+                    {u.role !== "admin" && (
+                      u.isActive ? (
+                        <button
+                          className="btn btn-danger"
+                          onClick={() => handleDeactivate(u._id)}
+                        >
+                          Remove
+                        </button>
+                      ) : (
+                        <button
+                          className="btn btn-success"
+                          onClick={() => handleActivate(u._id)}
+                        >
+                          Reactivate
+                        </button>
+                      )
+                    )}
+                  </td>
                 </tr>
               ))}
             </tbody>

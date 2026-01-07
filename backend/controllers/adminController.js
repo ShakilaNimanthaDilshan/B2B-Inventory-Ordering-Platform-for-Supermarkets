@@ -1,7 +1,7 @@
 // backend/controllers/adminController.js
 const User = require("../models/User");
 
-// GET /api/admin/pending-users
+// 🔍 GET /api/admin/pending-users
 const getPendingUsers = async (req, res, next) => {
   try {
     const users = await User.find({ isApproved: false }).select("-password");
@@ -11,7 +11,7 @@ const getPendingUsers = async (req, res, next) => {
   }
 };
 
-// PATCH /api/admin/approve/:userId
+// ✅ PATCH /api/admin/approve/:userId
 const approveUser = async (req, res, next) => {
   try {
     const { userId } = req.params;
@@ -30,6 +30,7 @@ const approveUser = async (req, res, next) => {
         email: user.email,
         role: user.role,
         isApproved: user.isApproved,
+        isActive: user.isActive,
       },
     });
   } catch (error) {
@@ -37,8 +38,8 @@ const approveUser = async (req, res, next) => {
   }
 };
 
-// PATCH /api/admin/reject/:userId
-// For simplicity: delete the user
+// ❌ PATCH /api/admin/reject/:userId
+// Reject = delete user
 const rejectUser = async (req, res, next) => {
   try {
     const { userId } = req.params;
@@ -49,7 +50,7 @@ const rejectUser = async (req, res, next) => {
     if (user.role === "admin") {
       return res
         .status(400)
-        .json({ message: "Cannot reject admin user from here" });
+        .json({ message: "Cannot reject admin user" });
     }
 
     await user.deleteOne();
@@ -59,17 +60,56 @@ const rejectUser = async (req, res, next) => {
   }
 };
 
+// 🚫 PATCH /api/admin/deactivate/:id
+const deactivateUser = async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id);
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    if (user.role === "admin") {
+      return res.status(400).json({ message: "Admin cannot be deactivated" });
+    }
+
+    user.isActive = false;
+    await user.save();
+
+    res.json({ message: "User access removed successfully" });
+  } catch (error) {
+    res.status(500).json({ message: "Failed to remove user access" });
+  }
+};
+
+// ♻️ PATCH /api/admin/activate/:id
+const activateUser = async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id);
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    user.isActive = true;
+    await user.save();
+
+    res.json({ message: "User re-activated successfully" });
+  } catch (error) {
+    res.status(500).json({ message: "Failed to activate user" });
+  }
+};
+
 // 📊 GET /api/admin/stats
-// Dashboard analytics: counts
 const getStats = async (req, res, next) => {
   try {
     const totalUsers = await User.countDocuments();
     const totalSuppliers = await User.countDocuments({ role: "supplier" });
-    const totalSupermarkets = await User.countDocuments({
-      role: "supermarket",
-    });
+    const totalSupermarkets = await User.countDocuments({ role: "supermarket" });
     const pendingUsers = await User.countDocuments({ isApproved: false });
     const approvedUsers = await User.countDocuments({ isApproved: true });
+    const activeUsers = await User.countDocuments({ isActive: true });
+    const inactiveUsers = await User.countDocuments({ isActive: false });
 
     res.json({
       totalUsers,
@@ -77,6 +117,8 @@ const getStats = async (req, res, next) => {
       totalSupermarkets,
       pendingUsers,
       approvedUsers,
+      activeUsers,
+      inactiveUsers,
     });
   } catch (error) {
     next(error);
@@ -84,7 +126,6 @@ const getStats = async (req, res, next) => {
 };
 
 // 👥 GET /api/admin/users?role=supplier&status=approved
-// Manage suppliers & supermarkets
 const getUsers = async (req, res, next) => {
   try {
     const { role, status } = req.query;
@@ -96,6 +137,8 @@ const getUsers = async (req, res, next) => {
 
     if (status === "pending") filter.isApproved = false;
     else if (status === "approved") filter.isApproved = true;
+    else if (status === "active") filter.isActive = true;
+    else if (status === "inactive") filter.isActive = false;
 
     const users = await User.find(filter).select("-password");
     res.json(users);
@@ -105,17 +148,16 @@ const getUsers = async (req, res, next) => {
 };
 
 // 📄 GET /api/admin/users-report
-// Simple CSV report of all users
 const getUsersReport = async (req, res, next) => {
   try {
     const users = await User.find().select("-password");
 
-    let csv = "Name,Email,Role,Approved,Created At\n";
+    let csv = "Name,Email,Role,Approved,Active,Created At\n";
 
     users.forEach((u) => {
       csv += `"${u.name}","${u.email}",${u.role},${
         u.isApproved ? "Yes" : "No"
-      },${u.createdAt.toISOString()}\n`;
+      },${u.isActive ? "Yes" : "No"},${u.createdAt.toISOString()}\n`;
     });
 
     res.header("Content-Type", "text/csv");
@@ -126,10 +168,13 @@ const getUsersReport = async (req, res, next) => {
   }
 };
 
+// 🚀 EXPORTS
 module.exports = {
   getPendingUsers,
   approveUser,
   rejectUser,
+  deactivateUser,
+  activateUser,
   getStats,
   getUsers,
   getUsersReport,

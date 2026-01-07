@@ -11,7 +11,7 @@ const registerUser = async (req, res, next) => {
       return res.status(400).json({ message: "All fields are required" });
     }
 
-    // Block admin registration via API
+    // ❌ Block admin registration
     if (role === "admin") {
       return res
         .status(403)
@@ -34,6 +34,7 @@ const registerUser = async (req, res, next) => {
       role,
       district,        // ✅ SAVE DISTRICT
       isApproved: false,
+      isActive: true, // ✅ default, explicit
     });
 
     res.status(201).json({
@@ -45,6 +46,7 @@ const registerUser = async (req, res, next) => {
         role: user.role,
         district: user.district, // ✅ RETURN DISTRICT
         isApproved: user.isApproved,
+        isActive: user.isActive,
       },
     });
   } catch (error) {
@@ -69,6 +71,14 @@ const loginUser = async (req, res, next) => {
       return res.status(401).json({ message: "Invalid email or password" });
     }
 
+    // 🚫 BLOCK deactivated users (NEW)
+    if (!user.isActive) {
+      return res.status(403).json({
+        message: "Your account has been deactivated. Contact admin.",
+      });
+    }
+
+    // ⏳ BLOCK unapproved supplier/supermarket
     if (
       (user.role === "supplier" || user.role === "supermarket") &&
       !user.isApproved
@@ -89,6 +99,7 @@ const loginUser = async (req, res, next) => {
         role: user.role,
         district: user.district, // ✅ IMPORTANT
         isApproved: user.isApproved,
+        isActive: user.isActive,
       },
     });
   } catch (error) {
@@ -103,6 +114,14 @@ const getMe = async (req, res, next) => {
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
+
+    // 🚫 Extra safety: block inactive users
+    if (!user.isActive) {
+      return res.status(403).json({
+        message: "Your account has been deactivated. Contact admin.",
+      });
+    }
+
     res.json(user);
   } catch (error) {
     next(error);

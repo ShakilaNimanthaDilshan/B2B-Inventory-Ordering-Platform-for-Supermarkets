@@ -10,6 +10,7 @@ const AdminDashboard = () => {
   const [loadingStats, setLoadingStats] = useState(false);
   const [error, setError] = useState("");
 
+  // 📊 Fetch dashboard stats
   const fetchStats = async () => {
     try {
       setLoadingStats(true);
@@ -23,6 +24,7 @@ const AdminDashboard = () => {
     }
   };
 
+  // 📄 Download CSV report
   const downloadReport = async () => {
     try {
       const res = await api.get("/admin/users-report", {
@@ -49,7 +51,7 @@ const AdminDashboard = () => {
     <div className="admin-page">
       <h2 className="admin-header-title">Admin Dashboard</h2>
       <p className="admin-header-subtitle">
-        Welcome, Admin. From here you can manage users and view system stats.
+        Welcome, Admin. View system stats and manage platform users.
       </p>
 
       {loadingStats && <p>Loading stats...</p>}
@@ -86,7 +88,7 @@ const AdminDashboard = () => {
             </div>
           </div>
 
-          {/* Charts */}
+          {/* 📈 Charts */}
           <AdminStatsCharts stats={stats} />
         </>
       )}
