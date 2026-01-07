@@ -25,6 +25,10 @@ const userSchema = new mongoose.Schema(
       enum: ["admin", "supplier", "supermarket"],
       default: "supermarket",
     },
+     district: {
+    type: String,
+    required: true, // ✅ IMPORTANT
+  },
     isApproved: {
       type: Boolean,
       default: false,

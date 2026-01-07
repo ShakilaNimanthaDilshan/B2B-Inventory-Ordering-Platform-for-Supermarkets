@@ -3,12 +3,11 @@ const User = require("../models/User");
 const generateToken = require("../utils/generateToken");
 
 // POST /api/auth/register
-// Public
 const registerUser = async (req, res, next) => {
   try {
-    const { name, email, password, role } = req.body;
+    const { name, email, password, role, district } = req.body;
 
-    if (!name || !email || !password || !role) {
+    if (!name || !email || !password || !role || !district) {
       return res.status(400).json({ message: "All fields are required" });
     }
 
@@ -33,6 +32,7 @@ const registerUser = async (req, res, next) => {
       email,
       password,
       role,
+      district,        // ✅ SAVE DISTRICT
       isApproved: false,
     });
 
@@ -43,16 +43,16 @@ const registerUser = async (req, res, next) => {
         name: user.name,
         email: user.email,
         role: user.role,
+        district: user.district, // ✅ RETURN DISTRICT
         isApproved: user.isApproved,
       },
     });
   } catch (error) {
-    next(error); // ✅ next exists because of (req, res, next)
+    next(error);
   }
 };
 
 // POST /api/auth/login
-// Public
 const loginUser = async (req, res, next) => {
   try {
     const { email, password } = req.body;
@@ -87,16 +87,16 @@ const loginUser = async (req, res, next) => {
         name: user.name,
         email: user.email,
         role: user.role,
+        district: user.district, // ✅ IMPORTANT
         isApproved: user.isApproved,
       },
     });
   } catch (error) {
-    next(error); // ✅
+    next(error);
   }
 };
 
 // GET /api/auth/me
-// Private
 const getMe = async (req, res, next) => {
   try {
     const user = await User.findById(req.user.id).select("-password");
@@ -105,7 +105,7 @@ const getMe = async (req, res, next) => {
     }
     res.json(user);
   } catch (error) {
-    next(error); // ✅
+    next(error);
   }
 };
 

@@ -4,6 +4,36 @@ import { useNavigate } from "react-router-dom";
 import api from "../api/axiosInstance";
 import "./Auth.css";
 
+
+const districts = [
+  "Colombo",
+  "Gampaha",
+  "Kalutara",
+  "Kandy",
+  "Matale",
+  "Nuwara Eliya",
+  "Galle",
+  "Matara",
+  "Hambantota",
+  "Jaffna",
+  "Kilinochchi",
+  "Mannar",
+  "Mullaitivu",
+  "Vavuniya",
+  "Trincomalee",
+  "Batticaloa",
+  "Ampara",
+  "Kurunegala",
+  "Puttalam",
+  "Anuradhapura",
+  "Polonnaruwa",
+  "Badulla",
+  "Monaragala",
+  "Ratnapura",
+  "Kegalle",
+];
+
+
 const RegisterPage = () => {
   const navigate = useNavigate();
 
@@ -11,7 +41,8 @@ const RegisterPage = () => {
     name: "",
     email: "",
     password: "",
-    role: "supplier", // default
+    role: "supplier", 
+     district: "", // default
   });
 
   const [message, setMessage] = useState("");
@@ -38,6 +69,7 @@ const RegisterPage = () => {
         email: "",
         password: "",
         role: "supplier",
+         district: "",
       });
 
       // ✅ Go to "wait until admin approves" page (NOT admin page)
@@ -86,6 +118,22 @@ const RegisterPage = () => {
           <option value="supplier">Supplier</option>
           <option value="supermarket">Supermarket</option>
         </select>
+
+        <label>District</label>
+<select
+  name="district"
+  value={formData.district}
+  onChange={onChange}
+  required
+>
+  <option value="">Select District</option>
+  {districts.map((district) => (
+    <option key={district} value={district}>
+      {district}
+    </option>
+  ))}
+</select>
+
 
         <button type="submit">Register</button>
       </form>

@@ -1,11 +1,12 @@
 // backend/controllers/productController.js
 const Product = require("../models/Product");
 
-// POST /api/products/        (supplier only) - multipart/form-data (image)
+// CREATE PRODUCT (supplier only)
 const createProduct = async (req, res, next) => {
   try {
     const { name, description, price, category, stock } = req.body;
-    if (!name || !price) return res.status(400).json({ message: "Name and price required" });
+    if (!name || !price)
+      return res.status(400).json({ message: "Name and price required" });
 
     const product = new Product({
       name,
@@ -14,10 +15,10 @@ const createProduct = async (req, res, next) => {
       category,
       stock: Number(stock || 0),
       supplier: req.user.id,
+      district: req.user.district, // ✅ AUTO FROM SUPPLIER
     });
 
     if (req.file) {
-      // store relative path so frontend can request /uploads/...
       product.image = `/uploads/${req.file.filename}`;
     }
 
@@ -28,50 +29,77 @@ const createProduct = async (req, res, next) => {
   }
 };
 
-// GET /api/products/my-products (supplier only) - list supplier's products
+// SUPPLIER: own products
 const getMyProducts = async (req, res, next) => {
   try {
-    const products = await Product.find({ supplier: req.user.id }).sort({ createdAt: -1 });
+    const products = await Product.find({
+      supplier: req.user.id,
+    }).sort({ createdAt: -1 });
+
     res.json(products);
   } catch (err) {
     next(err);
   }
 };
 
-// GET /api/products/        (public) - list all active products (for supermarkets)
+// SUPERMARKET: ONLY SAME DISTRICT PRODUCTS
 const getAllProducts = async (req, res, next) => {
   try {
-    const q = {};
+    const q = {
+      isActive: true,
+      district: req.user.district, // ✅ FILTER BY DISTRICT
+    };
+
     if (req.query.category) q.category = req.query.category;
-    if (req.query.supplier) q.supplier = req.query.supplier;
-    q.isActive = true;
-    const products = await Product.find(q).populate("supplier", "name email").sort({ createdAt: -1 });
+
+    const products = await Product.find(q)
+      .populate("supplier", "name email district")
+      .sort({ createdAt: -1 });
+
     res.json(products);
   } catch (err) {
     next(err);
   }
 };
 
-// GET /api/products/:id     (public)
+// GET PRODUCT BY ID
 const getProductById = async (req, res, next) => {
   try {
-    const product = await Product.findById(req.params.id).populate("supplier", "name email");
-    if (!product) return res.status(404).json({ message: "Product not found" });
+    const product = await Product.findById(req.params.id).populate(
+      "supplier",
+      "name email district"
+    );
+    if (!product)
+      return res.status(404).json({ message: "Product not found" });
+
+    // ✅ EXTRA SAFETY
+    if (
+      req.user.role === "supermarket" &&
+      product.district !== req.user.district
+    ) {
+      return res.status(403).json({ message: "Access denied" });
+    }
+
     res.json(product);
   } catch (err) {
     next(err);
   }
 };
 
-// PATCH /api/products/:id   (supplier only, only owner OR admin)
+// UPDATE PRODUCT
 const updateProduct = async (req, res, next) => {
   try {
     const product = await Product.findById(req.params.id);
-    if (!product) return res.status(404).json({ message: "Product not found" });
+    if (!product)
+      return res.status(404).json({ message: "Product not found" });
 
-    // only supplier owner or admin can edit
-    if (product.supplier.toString() !== req.user.id && req.user.role !== "admin") {
-      return res.status(403).json({ message: "Not authorized to edit this product" });
+    if (
+      product.supplier.toString() !== req.user.id &&
+      req.user.role !== "admin"
+    ) {
+      return res
+        .status(403)
+        .json({ message: "Not authorized to edit this product" });
     }
 
     const { name, description, price, category, stock, isActive } = req.body;
@@ -92,14 +120,20 @@ const updateProduct = async (req, res, next) => {
   }
 };
 
-// DELETE /api/products/:id  (supplier only, only owner OR admin)
+// DELETE PRODUCT
 const deleteProduct = async (req, res, next) => {
   try {
     const product = await Product.findById(req.params.id);
-    if (!product) return res.status(404).json({ message: "Product not found" });
+    if (!product)
+      return res.status(404).json({ message: "Product not found" });
 
-    if (product.supplier.toString() !== req.user.id && req.user.role !== "admin") {
-      return res.status(403).json({ message: "Not authorized to delete this product" });
+    if (
+      product.supplier.toString() !== req.user.id &&
+      req.user.role !== "admin"
+    ) {
+      return res
+        .status(403)
+        .json({ message: "Not authorized to delete this product" });
     }
 
     await product.deleteOne();
@@ -108,28 +142,6 @@ const deleteProduct = async (req, res, next) => {
     next(err);
   }
 };
-// get data for dashboard
-const getDashboardStats = async (req, res) => {
-  try {
-    // (Total Products)
-    const totalProducts = await Product.countDocuments();
-
-    //  (Low Stock)
-    const lowStock = await Product.countDocuments({ stock: { $lte: 10 } });
-
-    
-    const activeProducts = await Product.countDocuments({ stock: { $gt: 0 } });
-
-    res.status(200).json({
-      totalProducts,
-      lowStock,
-      activeProducts,
-    });
-  } catch (error) {
-    res.status(500).json({ message: "Error fetching stats" });
-  }
-};
-
 
 module.exports = {
   createProduct,
@@ -138,5 +150,4 @@ module.exports = {
   getProductById,
   updateProduct,
   deleteProduct,
-  getDashboardStats,
 };

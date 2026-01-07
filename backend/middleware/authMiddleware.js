@@ -1,6 +1,5 @@
 // backend/middleware/authMiddleware.js
 const jwt = require("jsonwebtoken");
-const User = require("../models/User");
 
 const protect = async (req, res, next) => {
   let token;
@@ -14,8 +13,12 @@ const protect = async (req, res, next) => {
 
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-      // Attach user basic info to req
-      req.user = { id: decoded.id, role: decoded.role };
+      // ✅ INCLUDE DISTRICT
+      req.user = {
+        id: decoded.id,
+        role: decoded.role,
+        district: decoded.district,
+      };
 
       return next();
     } catch (error) {
@@ -23,9 +26,7 @@ const protect = async (req, res, next) => {
     }
   }
 
-  if (!token) {
-    return res.status(401).json({ message: "Not authorized, no token" });
-  }
+  return res.status(401).json({ message: "Not authorized, no token" });
 };
 
 const authorizeRoles = (...roles) => {
