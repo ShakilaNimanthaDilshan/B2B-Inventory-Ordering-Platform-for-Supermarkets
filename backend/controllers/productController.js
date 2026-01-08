@@ -140,6 +140,30 @@ const deleteProduct = async (req, res, next) => {
   }
 };
 
+//dashboard-Stats
+const dashboardStats = async (req, res, next) => {
+  try {
+    const supplierId = req.user.id;
+
+    const totalProducts = await Product.countDocuments({ supplier: supplierId });
+
+    const activeProducts = await Product.countDocuments({
+      supplier: supplierId,
+      isActive: true,
+    });
+
+    // low stock = stock <= 10 (same as frontend)
+    const lowStock = await Product.countDocuments({
+      supplier: supplierId,
+      stock: { $lte: 10 },
+    });
+
+    res.json({ totalProducts, activeProducts, lowStock });
+  } catch (err) {
+    next(err);
+  }
+};
+
 module.exports = {
   createProduct,
   getMyProducts,
@@ -147,4 +171,5 @@ module.exports = {
   getProductById,
   updateProduct,
   deleteProduct,
+  dashboardStats,
 };

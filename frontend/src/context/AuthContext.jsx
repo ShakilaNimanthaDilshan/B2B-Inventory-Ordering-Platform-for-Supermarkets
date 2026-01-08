@@ -7,7 +7,7 @@ const AuthContext = createContext(null);
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null); // { id, name, role, isApproved }
   const [token, setToken] = useState(localStorage.getItem("token"));
-  const [loading, setLoading] = useState(true); // 🔴 start as true
+  const [loading, setLoading] = useState(true); //  start as true
 
   useEffect(() => {
     const fetchMe = async () => {

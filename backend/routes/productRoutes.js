@@ -12,6 +12,7 @@ const {
   getProductById,
   updateProduct,
   deleteProduct,
+   dashboardStats,
 } = require("../controllers/productController");
 
 // SUPERMARKET: get products (district filtered)
@@ -30,8 +31,17 @@ router.post(
 // SUPPLIER: own products
 router.get("/my-products", protect, authorizeRoles("supplier"), getMyProducts);
 
+//stats
+router.get(
+  "/dashboard-stats",
+  protect,
+  authorizeRoles("supplier"),
+  dashboardStats
+);
+
 // GET product by ID
 router.get("/:id", protect, getProductById);
+
 
 // UPDATE product
 router.patch(
@@ -44,5 +54,7 @@ router.patch(
 
 // DELETE product
 router.delete("/:id", protect, deleteProduct);
+
+
 
 module.exports = router;
