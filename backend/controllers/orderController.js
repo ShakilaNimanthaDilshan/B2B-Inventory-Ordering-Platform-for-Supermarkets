@@ -1,6 +1,7 @@
 const mongoose = require("mongoose");
 const Order = require("../models/Order");
 
+
 //  Supplier: list incoming orders
 const getSupplierOrders = async (req, res, next) => {
   try {
@@ -92,8 +93,11 @@ const updateOrderStatus = async (req, res, next) => {
   }
 };
 
+
+
 module.exports = {
   getSupplierOrders,
   getOrderById,
   updateOrderStatus,
+ 
 };
