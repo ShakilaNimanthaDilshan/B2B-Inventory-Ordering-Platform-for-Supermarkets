@@ -4,31 +4,21 @@ const router = express.Router();
 const { protect, authorizeRoles } = require("../middleware/authMiddleware");
 const {
   getSupplierOrders,
+  getMyOrders,
   getOrderById,
   updateOrderStatus,
-  // createOrder, // (optional - friend side)
 } = require("../controllers/orderController");
 
-//  Supplier: list own incoming orders
-router.get(
-  "/supplier",
-  protect,
-  authorizeRoles("supplier"),
-  getSupplierOrders
-);
+//  Supermarket: list own orders (MUST be before /:id)
+router.get("/my", protect, authorizeRoles("supermarket"), getMyOrders);
 
-//  Supplier/Admin: view order details
+//  Supplier: list incoming orders
+router.get("/supplier", protect, authorizeRoles("supplier"), getSupplierOrders);
+
+//  view order details
 router.get("/:id", protect, getOrderById);
 
 //  Supplier: update order status
-router.patch(
-  "/:id/status",
-  protect,
-  authorizeRoles("supplier"),
-  updateOrderStatus
-);
-
-
-
+router.patch("/:id/status", protect, authorizeRoles("supplier"), updateOrderStatus);
 
 module.exports = router;

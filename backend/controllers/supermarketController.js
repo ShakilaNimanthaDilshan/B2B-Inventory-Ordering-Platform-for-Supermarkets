@@ -1,49 +1,48 @@
-const mongoose = require("mongoose");
+// backend/controllers/supermarketController.js
 const Order = require("../models/Order");
-const Supermarket = require("../models/Supermarket");
 
-// GET /api/supermarkets/buyers  (supplier)
-const getSupplierBuyers = async (req, res, next) => {
+// GET /api/supermarkets/buyers  (Supplier only)
+const getMyBuyers = async (req, res, next) => {
   try {
     const supplierId = req.user.id;
 
-    const rows = await Order.aggregate([
-      { $match: { supplier: new mongoose.Types.ObjectId(supplierId) } },
+    // Orders වලින් buyers (supermarkets) list එක aggregate කරගන්නවා
+    const buyers = await Order.aggregate([
+      { $match: { supplier: require("mongoose").Types.ObjectId.createFromHexString(supplierId) } },
       {
         $group: {
           _id: "$supermarket",
           totalOrders: { $sum: 1 },
           totalRevenue: { $sum: "$totalAmount" },
-          lastOrderDate: { $max: "$createdAt" },
+        },
+      },
+      {
+        $lookup: {
+          from: "users",
+          localField: "_id",
+          foreignField: "_id",
+          as: "supermarket",
+        },
+      },
+      { $unwind: "$supermarket" },
+      {
+        $project: {
+          supermarketId: "$supermarket._id",
+          name: "$supermarket.name",
+          contactEmail: "$supermarket.email",
+          district: "$supermarket.district",
+          totalOrders: 1,
+          totalRevenue: 1,
+          _id: 0,
         },
       },
       { $sort: { totalRevenue: -1 } },
     ]);
 
-    const supermarketIds = rows.map((r) => r._id);
-
-    const markets = await Supermarket.find({ _id: { $in: supermarketIds } })
-      .select("name contactEmail address");
-
-    const map = new Map(markets.map((m) => [m._id.toString(), m]));
-
-    const result = rows.map((r) => {
-      const sm = map.get(r._id.toString());
-      return {
-        supermarketId: r._id,
-        name: sm?.name || "Unknown",
-        contactEmail: sm?.contactEmail || "",
-        address: sm?.address || "",
-        totalOrders: r.totalOrders,
-        totalRevenue: r.totalRevenue,
-        lastOrderDate: r.lastOrderDate,
-      };
-    });
-
-    res.json(result);
+    res.json(buyers);
   } catch (err) {
     next(err);
   }
 };
 
-module.exports = { getSupplierBuyers };
+module.exports = { getMyBuyers };
