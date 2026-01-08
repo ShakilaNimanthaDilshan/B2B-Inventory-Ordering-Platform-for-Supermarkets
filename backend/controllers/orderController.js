@@ -1,18 +1,34 @@
+const express = require("express");
+const router = express.Router();
 
-const Order = require("../models/Order");
+const { protect, authorizeRoles } = require("../middleware/authMiddleware");
+const {
+  getSupplierOrders,
+  getOrderById,
+  updateOrderStatus,
+  // createOrder, // (optional - friend side)
+} = require("../controllers/orderController");
 
-const getSupplierOrders = async (req, res, next) => {
-  try {
-    const supplierId = req.user.id;
+//  Supplier: list own incoming orders
+router.get(
+  "/supplier",
+  protect,
+  authorizeRoles("supplier"),
+  getSupplierOrders
+);
 
-    const orders = await Order.find({ supplier: supplierId })
-      .populate("supermarket", "name email")
-      .sort({ createdAt: -1 });
+//  Supplier/Admin: view order details
+router.get("/:id", protect, getOrderById);
 
-    res.json(orders);
-  } catch (err) {
-    next(err);
-  }
-};
+//  Supplier: update order status
+router.patch(
+  "/:id/status",
+  protect,
+  authorizeRoles("supplier"),
+  updateOrderStatus
+);
 
-module.exports = { getSupplierOrders };
+// (Optional) Supermarket: create order (your friend can do)
+// router.post("/", protect, authorizeRoles("supermarket"), createOrder);
+
+module.exports = router;
