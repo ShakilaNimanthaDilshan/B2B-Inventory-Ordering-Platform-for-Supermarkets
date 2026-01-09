@@ -5,17 +5,7 @@ import SupplierTopbar from "../SupplierTopbar";
 import "./SupplierBuyers.css";
 import SriLankaLeafletMap from "../../../components/SriLankaLeafletMap";
 
-import {
-  ResponsiveContainer,
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  Tooltip,
-  CartesianGrid,
-  Cell,
-  LabelList,
-} from "recharts";
+
 
 const money = (n = 0) =>
   `Rs. ${Number(n || 0).toLocaleString("en-LK", { maximumFractionDigits: 0 })}`;
@@ -33,8 +23,7 @@ const getInitials = (name = "") => {
   return parts.map((p) => p[0]?.toUpperCase()).join("") || "S";
 };
 
-// Color palette for bars
-const CHART_COLORS = ["#10b981", "#3b82f6", "#8b5cf6", "#f59e0b"];
+
 
 const SupplierBuyers = () => {
   const [buyers, setBuyers] = useState([]);
@@ -65,8 +54,7 @@ const SupplierBuyers = () => {
     load();
   }, []);
 
-  // Build a mapping: lower(district) -> original district string from buyer data
-  // This helps when Leaflet map click returns slightly different casing/spaces.
+  
   const districtCanonicalMap = useMemo(() => {
     const map = {};
     buyers.forEach((b) => {
@@ -145,7 +133,7 @@ const SupplierBuyers = () => {
       .slice(0, 4);
   }, [buyers]);
 
-  // ✅ Map data: districtStats (keyed by lower-case district name)
+  //  Map data: districtStats (keyed by lower-case district name)
   const districtStats = useMemo(() => {
     const out = {};
     buyers.forEach((b) => {
@@ -369,7 +357,7 @@ const SupplierBuyers = () => {
 
             {/* RIGHT: Map + Chart */}
             <div className="buyers-right">
-              {/* ✅ NEW: Leaflet Map card */}
+              {/* NEW: Leaflet Map card */}
               <div className="chart-card">
                 <div className="chart-title">Buyer Districts (Sri Lanka)</div>
 
@@ -380,7 +368,7 @@ const SupplierBuyers = () => {
                 ) : (
                   <>
                     <SriLankaLeafletMap
-                      height={500}
+                      height={Math.min(620, window.innerHeight * 0.6)}
                       districtStats={districtStats}
                       selectedDistrict={district}
                       onSelectDistrict={(clickedDistrictName) => {
