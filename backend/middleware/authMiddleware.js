@@ -1,7 +1,7 @@
 // backend/middleware/authMiddleware.js
 const jwt = require("jsonwebtoken");
-const User = require("../models/User"); //  ADD THIS
 
+// 🔐 Protect middleware (JWT verification)
 const protect = async (req, res, next) => {
   let token;
 
@@ -11,21 +11,14 @@ const protect = async (req, res, next) => {
   ) {
     try {
       token = req.headers.authorization.split(" ")[1];
+
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-      const user = await User.findById(decoded.id).select("role district isActive");
-      if (!user) {
-        return res.status(401).json({ message: "Not authorized, user not found" });
-      }
-
-      if (user.isActive === false) {
-        return res.status(403).json({ message: "Account deactivated. Contact admin." });
-      }
-
+      // ✅ Attach user info to request
       req.user = {
-        id: user._id.toString(),
-        role: user.role,
-        district: user.district,
+        id: decoded.id,
+        role: decoded.role,
+        district: decoded.district,
       };
 
       return next();
@@ -37,17 +30,30 @@ const protect = async (req, res, next) => {
   return res.status(401).json({ message: "Not authorized, no token" });
 };
 
-// 🔒 Admin-only middleware
+// 🔒 Admin-only middleware (STEP 3 FIX)
 const adminOnly = (req, res, next) => {
-  if (req.user && req.user.role === "admin") next();
-  else res.status(403).json({ message: "Admin access required" });
+  if (req.user && req.user.role === "admin") {
+    next();
+  } else {
+    res.status(403).json({ message: "Admin access required" });
+  }
 };
 
-const authorizeRoles = (...roles) => (req, res, next) => {
-  if (!req.user) return res.status(401).json({ message: "Not authenticated" });
-  if (!roles.includes(req.user.role))
-    return res.status(403).json({ message: "Forbidden: insufficient role" });
-  next();
+// 🎭 Optional: Role-based authorization (still usable elsewhere)
+const authorizeRoles = (...roles) => {
+  return (req, res, next) => {
+    if (!req.user) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
+    if (!roles.includes(req.user.role)) {
+      return res.status(403).json({ message: "Forbidden: insufficient role" });
+    }
+    next();
+  };
 };
 
-module.exports = { protect, adminOnly, authorizeRoles };
+module.exports = {
+  protect,
+  adminOnly,
+  authorizeRoles,
+};

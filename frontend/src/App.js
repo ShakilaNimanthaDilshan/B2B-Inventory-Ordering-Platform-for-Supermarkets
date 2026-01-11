@@ -23,11 +23,6 @@ import AdminUsersPage from "./pages/AdminUsersPage";
 import SupplierOrders from "./pages/supplier/OrderPage/SupplierOrders";
 
 import ViewProducts from "./pages/supplier/ProductPage/ViewProducts";
-import SupplierBuyers from "./pages/supplier/SupplierBuyers/SupplierBuyers";
-
-// ...
-<Route path="/supplier/supermarkets" element={<SupplierBuyers />} />
-
 
 //This USe to Hide Navigation bar for tha page that dosent need it
 const MainLayout = () => {
@@ -88,7 +83,6 @@ const App = () => {
             
             <Route path="/supplier/products" element={<ViewProducts />} />
             <Route path="/supplier/orders" element={<SupplierOrders />} />
-            <Route path="/supplier/supermarkets" element={<SupplierBuyers />} />
           </Route>
         </Routes>
       </Router>
