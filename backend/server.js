@@ -10,8 +10,6 @@ const errorHandler = require("./middleware/errorMiddleware");
 const path = require("path");
 const productRoutes = require("./routes/productRoutes");
 const orderRoutes = require("./routes/orderRoutes");
-const supermarketRoutes = require("./routes/supermarketRoutes");
-
 
 dotenv.config();
 connectDB();
@@ -38,9 +36,6 @@ app.use("/api/products", productRoutes);
 
 //FOR INCOMING ORDER
 app.use("/api/orders", orderRoutes);
-
-//supermarket routes
-app.use("/api/supermarkets", supermarketRoutes);
 
 // Error handler
 app.use(errorHandler);

@@ -132,7 +132,7 @@
   display: inline-block;
 }
 .badge-pending { background: #fffbeb; color: #d97706; }
-.badge-out_for_delivery { background: #eff6ff; color: #3b82f6; }
+.badge-shipped { background: #eff6ff; color: #3b82f6; }
 .badge-delivered { background: #dcfce7; color: #10b981; }
 .badge-cancelled { background: #fee2e2; color: #ef4444; }
 
