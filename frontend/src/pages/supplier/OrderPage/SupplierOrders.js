@@ -1,77 +1,132 @@
-import React, { useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import SupplierSidebar from "../Suppliersidebar";
 import SupplierTopbar from "../SupplierTopbar";
+import axios from "../../../api/axiosInstance";
 import "./SupplierOrders.css";
 
-const SupplierOrders = () => {
-  
-  const [orders, setOrders] = useState([
-    {
-      id: "ORD-2024-001",
-      customer: "Keells Super - Colombo 07",
-      date: "2025-12-21",
-      itemCount: 15,
-      total: 125000.00,
-      status: "Pending",
-      paymentMethod: "Credit (30 Days)",
-      items: [
-        { name: "Munchee Biscuits 100g", qty: 50, price: 100 },
-        { name: "Samaposha 200g", qty: 200, price: 150 },
-      ]
-    },
-    {
-      id: "ORD-2024-002",
-      customer: "Cargills Food City - Nugegoda",
-      date: "2025-12-20",
-      itemCount: 8,
-      total: 45000.50,
-      status: "Shipped",
-      paymentMethod: "Cash on Delivery",
-      items: [
-        { name: "Fresh Milk 1L", qty: 20, price: 400 },
-      ]
-    },
-    {
-      id: "ORD-2024-003",
-      customer: "Arpico Super Centre",
-      date: "2025-12-18",
-      itemCount: 25,
-      total: 210000.00,
-      status: "Delivered",
-      paymentMethod: "Bank Transfer",
-      items: [
-        { name: "Basmati Rice 5kg", qty: 100, price: 1200 },
-      ]
-    },
-  ]);
+const toUiStatus = (s) => {
+  const val = (s || "").toLowerCase();
+  if (val === "pending") return "Pending";
+  if (val === "approved") return "Approved";
+  if (val === "rejected") return "Rejected";
+  if (val === "dispatched" || val === "shipped") return "Dispatched";
+  if (val === "delivered") return "Delivered";
+  return "Pending";
+};
 
+const normalizeOrder = (o) => {
+  const customerName = o?.supermarket?.name || "Unknown Customer";
+
+  const payment =
+    o?.paymentMethod === "credit"
+      ? "Credit (30 Days)"
+      : o?.paymentMethod === "cod"
+      ? "Cash on Delivery"
+      : o?.paymentMethod === "bank"
+      ? "Bank Transfer"
+      : o?.paymentMethod || "—";
+
+  const items = Array.isArray(o?.items)
+    ? o.items.map((it) => ({
+        name: it?.name || it?.product?.name || "Product",
+        qty: Number(it?.qty || 0),
+        price: Number(it?.price || 0),
+      }))
+    : [];
+
+  const itemCount = items.reduce((sum, it) => sum + (it.qty || 0), 0);
+
+  const id = o?._id ? `ORD-${String(o._id).slice(-6).toUpperCase()}` : "ORD-XXXX";
+  const dateStr = o?.createdAt;
+  const date = dateStr ? new Date(dateStr).toISOString().slice(0, 10) : "";
+
+  return {
+    id,
+    customer: customerName,
+    date,
+    itemCount,
+    total: Number(o?.totalAmount ?? 0),
+    status: toUiStatus(o?.status),
+    paymentMethod: payment,
+    items,
+    _rawId: o?._id,
+  };
+};
+
+const SupplierOrders = () => {
+  const [orders, setOrders] = useState([]);
   const [activeTab, setActiveTab] = useState("All");
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [errorMsg, setErrorMsg] = useState("");
 
-  // --- Filter Logic ---
-  const filteredOrders = orders.filter(order => {
-    const matchesStatus = activeTab === "All" || order.status === activeTab;
-    const matchesSearch = order.customer.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                          order.id.toLowerCase().includes(searchTerm.toLowerCase());
-    return matchesStatus && matchesSearch;
-  });
+  useEffect(() => {
+    const fetchOrders = async () => {
+      try {
+        setLoading(true);
+        setErrorMsg("");
+        const res = await axios.get("/orders/supplier");
+        const list = Array.isArray(res.data) ? res.data : [];
+        setOrders(list.map(normalizeOrder));
+      } catch (err) {
+        setErrorMsg(err?.response?.data?.message || "Failed to load orders");
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  // --- Stats Calculation (UX Feature) ---
-  const stats = {
-    pending: orders.filter(o => o.status === "Pending").length,
-    revenue: orders.reduce((acc, curr) => acc + curr.total, 0),
-    totalOrders: orders.length
-  };
+    fetchOrders();
+  }, []);
 
-  // --- Status Color Logic ---
+  const filteredOrders = useMemo(() => {
+    return orders.filter((order) => {
+      const matchesStatus = activeTab === "All" || order.status === activeTab;
+      const matchesSearch =
+        order.customer.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        order.id.toLowerCase().includes(searchTerm.toLowerCase());
+      return matchesStatus && matchesSearch;
+    });
+  }, [orders, activeTab, searchTerm]);
+
+  const stats = useMemo(() => {
+    return {
+      pending: orders.filter((o) => o.status === "Pending").length,
+      revenue: orders.reduce((acc, curr) => acc + (curr.total || 0), 0),
+    };
+  }, [orders]);
+
   const getStatusClass = (status) => {
     switch (status) {
       case "Pending": return "badge-pending";
-      case "Shipped": return "badge-shipped";
+      case "Dispatched": return "badge-out_for_delivery";
       case "Delivered": return "badge-delivered";
-      case "Cancelled": return "badge-cancelled";
+      case "Rejected": return "badge-cancelled";
+      case "Approved": return "badge-approved";
       default: return "";
+    }
+  };
+
+  const updateStatus = async (order, newStatus) => {
+    if (!order._rawId) return;
+
+    // optimistic UI
+    setOrders((prev) =>
+      prev.map((o) => (o.id === order.id ? { ...o, status: newStatus } : o))
+    );
+    setSelectedOrder((prev) => (prev ? { ...prev, status: newStatus } : prev));
+
+    const backendStatus =
+      newStatus === "Pending" ? "pending" :
+      newStatus === "Approved" ? "approved" :
+      newStatus === "Rejected" ? "rejected" :
+      newStatus === "Dispatched" ? "dispatched" :
+      newStatus === "Delivered" ? "delivered" : "pending";
+
+    try {
+      await axios.patch(`/orders/${order._rawId}/status`, { status: backendStatus });
+    } catch (err) {
+      alert(err?.response?.data?.message || "Status update failed");
     }
   };
 
@@ -80,16 +135,14 @@ const SupplierOrders = () => {
       <SupplierSidebar />
       <div className="supplier-main-content">
         <SupplierTopbar />
-        
+
         <div className="orders-page-container">
-          
-          {/* 1. Header & Stats Section */}
           <div className="orders-header">
             <div>
               <h1 className="page-title">Order Management</h1>
               <p className="page-subtitle">Manage and track your incoming orders</p>
             </div>
-            {/* Quick Stats Cards */}
+
             <div className="header-stats">
               <div className="stat-pill">
                 <span className="stat-label">Pending</span>
@@ -97,16 +150,17 @@ const SupplierOrders = () => {
               </div>
               <div className="stat-pill">
                 <span className="stat-label">Total Revenue</span>
-                <span className="stat-value success">Rs. {(stats.revenue/1000).toFixed(1)}k</span>
+                <span className="stat-value success">
+                  Rs. {(stats.revenue / 1000).toFixed(1)}k
+                </span>
               </div>
             </div>
           </div>
 
-          {/* 2. Controls Section (Search & Tabs) */}
           <div className="controls-section">
             <div className="tabs-container">
-              {["All", "Pending", "Shipped", "Delivered"].map((tab) => (
-                <button 
+              {["All", "Pending", "Dispatched", "Delivered"].map((tab) => (
+                <button
                   key={tab}
                   className={`tab-btn ${activeTab === tab ? "active" : ""}`}
                   onClick={() => setActiveTab(tab)}
@@ -115,114 +169,115 @@ const SupplierOrders = () => {
                 </button>
               ))}
             </div>
+
             <div className="search-wrapper">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-              <input 
-                type="text" 
-                placeholder="Search order ID or customer..." 
+              <input
+                type="text"
+                placeholder="Search order ID or customer..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
           </div>
 
-          {/* 3. Orders Table */}
-          <div className="table-card">
-            <table className="orders-table">
-              <thead>
-                <tr>
-                  <th>Order ID</th>
-                  <th>Customer</th>
-                  <th>Date</th>
-                  <th>Items</th>
-                  <th>Total Amount</th>
-                  <th>Status</th>
-                  <th className="action-col">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredOrders.length > 0 ? (
-                  filteredOrders.map((order) => (
-                    <tr key={order.id} className="order-row">
-                      <td className="id-cell">{order.id}</td>
-                      <td className="customer-cell">
-                        <div className="customer-name">{order.customer}</div>
-                        <div className="payment-method">{order.paymentMethod}</div>
-                      </td>
-                      <td>{order.date}</td>
-                      <td>{order.itemCount} Items</td>
-                      <td className="amount-cell">Rs. {order.total.toLocaleString()}</td>
-                      <td>
-                        <span className={`status-badge ${getStatusClass(order.status)}`}>
-                          {order.status}
-                        </span>
-                      </td>
-                      <td className="action-col">
-                        <button 
-                          className="btn-icon" 
-                          onClick={() => setSelectedOrder(order)}
-                          title="View Details"
-                        >
-                          View &rarr;
-                        </button>
-                      </td>
-                    </tr>
-                  ))
-                ) : (
+          {loading ? (
+            <div className="loading-container">
+              <div className="spinner"></div>
+              <p>Loading orders...</p>
+            </div>
+          ) : errorMsg ? (
+            <div className="empty-state">{errorMsg}</div>
+          ) : (
+            <div className="table-card">
+              <table className="orders-table">
+                <thead>
                   <tr>
-                    <td colSpan="7" className="empty-state">No orders found</td>
+                    <th>Order ID</th>
+                    <th>Customer</th>
+                    <th>Date</th>
+                    <th>Items</th>
+                    <th>Total Amount</th>
+                    <th>Status</th>
+                    <th className="action-col">Actions</th>
                   </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {filteredOrders.length > 0 ? (
+                    filteredOrders.map((order) => (
+                      <tr key={order.id} className="order-row">
+                        <td className="id-cell">{order.id}</td>
+                        <td className="customer-cell">
+                          <div className="customer-name">{order.customer}</div>
+                          <div className="payment-method">{order.paymentMethod}</div>
+                        </td>
+                        <td>{order.date}</td>
+                        <td>{order.itemCount} Items</td>
+                        <td className="amount-cell">Rs. {order.total.toLocaleString()}</td>
+                        <td>
+                          <span className={`status-badge ${getStatusClass(order.status)}`}>
+                            {order.status}
+                          </span>
+                        </td>
+                        <td className="action-col">
+                          <button className="btn-icon" onClick={() => setSelectedOrder(order)}>
+                            View →
+                          </button>
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan="7" className="empty-state">No orders found</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       </div>
 
-      {/* 4. Details Modal */}
       {selectedOrder && (
         <div className="modal-overlay" onClick={() => setSelectedOrder(null)}>
           <div className="order-modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <div>
                 <h2>{selectedOrder.id}</h2>
-                <span className={`status-badge ${getStatusClass(selectedOrder.status)}`}>{selectedOrder.status}</span>
+                <span className={`status-badge ${getStatusClass(selectedOrder.status)}`}>
+                  {selectedOrder.status}
+                </span>
               </div>
               <button className="close-btn" onClick={() => setSelectedOrder(null)}>×</button>
             </div>
-            
+
             <div className="modal-body">
-              <div className="customer-section">
-                <h3>Customer Details</h3>
-                <p><strong>Store:</strong> {selectedOrder.customer}</p>
-                <p><strong>Date:</strong> {selectedOrder.date}</p>
-                <p><strong>Payment:</strong> {selectedOrder.paymentMethod}</p>
-              </div>
+              <h3>Customer Details</h3>
+              <p><strong>Store:</strong> {selectedOrder.customer}</p>
+              <p><strong>Date:</strong> {selectedOrder.date}</p>
+              <p><strong>Payment:</strong> {selectedOrder.paymentMethod}</p>
 
               <h3>Order Items</h3>
-              <div className="modal-table-wrapper">
-                <table className="modal-table">
-                  <thead>
-                    <tr>
-                      <th>Product</th>
-                      <th className="text-right">Qty</th>
-                      <th className="text-right">Price</th>
-                      <th className="text-right">Total</th>
+              <table className="modal-table">
+                <thead>
+                  <tr>
+                    <th>Product</th>
+                    <th className="text-right">Qty</th>
+                    <th className="text-right">Price</th>
+                    <th className="text-right">Total</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {selectedOrder.items.map((item, idx) => (
+                    <tr key={idx}>
+                      <td>{item.name}</td>
+                      <td className="text-right">{item.qty}</td>
+                      <td className="text-right">{item.price}</td>
+                      <td className="text-right">{(item.qty * item.price).toLocaleString()}</td>
                     </tr>
-                  </thead>
-                  <tbody>
-                    {selectedOrder.items.map((item, idx) => (
-                      <tr key={idx}>
-                        <td>{item.name}</td>
-                        <td className="text-right">{item.qty}</td>
-                        <td className="text-right">{item.price}</td>
-                        <td className="text-right">{(item.qty * item.price).toLocaleString()}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-              
+                  ))}
+                </tbody>
+              </table>
+
               <div className="order-total">
                 <span>Total Amount:</span>
                 <span className="total-price">Rs. {selectedOrder.total.toLocaleString()}</span>
@@ -230,11 +285,14 @@ const SupplierOrders = () => {
             </div>
 
             <div className="modal-footer">
-              {/* Only show Action buttons if Pending */}
               {selectedOrder.status === "Pending" ? (
                 <>
-                  <button className="btn-reject">Reject Order</button>
-                  <button className="btn-accept">Accept & Ship</button>
+                  <button className="btn-reject" onClick={() => updateStatus(selectedOrder, "Rejected")}>
+                    Reject Order
+                  </button>
+                  <button className="btn-accept" onClick={() => updateStatus(selectedOrder, "Approved")}>
+                    Accept Order
+                  </button>
                 </>
               ) : (
                 <button className="btn-secondary" onClick={() => setSelectedOrder(null)}>Close</button>

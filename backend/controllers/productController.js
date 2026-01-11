@@ -4,8 +4,10 @@ const Product = require("../models/Product");
 // CREATE PRODUCT (supplier only)
 const createProduct = async (req, res, next) => {
   try {
-    const { name, description, price, category, stock } = req.body;
-    if (!name || !price)
+    const body = req.body || {};
+    const { name, description, price, category, stock } = body; // ✅ FIXED
+
+    if (!name || price === undefined || price === "")
       return res.status(400).json({ message: "Name and price required" });
 
     const product = new Product({
@@ -15,12 +17,10 @@ const createProduct = async (req, res, next) => {
       category,
       stock: Number(stock || 0),
       supplier: req.user.id,
-      district: req.user.district, // ✅ AUTO FROM SUPPLIER
+      district: req.user.district,
     });
 
-    if (req.file) {
-      product.image = `/uploads/${req.file.filename}`;
-    }
+    if (req.file) product.image = `/uploads/${req.file.filename}`;
 
     await product.save();
     res.status(201).json(product);
@@ -69,8 +69,7 @@ const getProductById = async (req, res, next) => {
       "supplier",
       "name email district"
     );
-    if (!product)
-      return res.status(404).json({ message: "Product not found" });
+    if (!product) return res.status(404).json({ message: "Product not found" });
 
     // ✅ EXTRA SAFETY
     if (
@@ -90,8 +89,7 @@ const getProductById = async (req, res, next) => {
 const updateProduct = async (req, res, next) => {
   try {
     const product = await Product.findById(req.params.id);
-    if (!product)
-      return res.status(404).json({ message: "Product not found" });
+    if (!product) return res.status(404).json({ message: "Product not found" });
 
     if (
       product.supplier.toString() !== req.user.id &&
@@ -124,8 +122,7 @@ const updateProduct = async (req, res, next) => {
 const deleteProduct = async (req, res, next) => {
   try {
     const product = await Product.findById(req.params.id);
-    if (!product)
-      return res.status(404).json({ message: "Product not found" });
+    if (!product) return res.status(404).json({ message: "Product not found" });
 
     if (
       product.supplier.toString() !== req.user.id &&
@@ -143,6 +140,30 @@ const deleteProduct = async (req, res, next) => {
   }
 };
 
+//dashboard-Stats
+const dashboardStats = async (req, res, next) => {
+  try {
+    const supplierId = req.user.id;
+
+    const totalProducts = await Product.countDocuments({ supplier: supplierId });
+
+    const activeProducts = await Product.countDocuments({
+      supplier: supplierId,
+      isActive: true,
+    });
+
+    // low stock = stock <= 10 (same as frontend)
+    const lowStock = await Product.countDocuments({
+      supplier: supplierId,
+      stock: { $lte: 10 },
+    });
+
+    res.json({ totalProducts, activeProducts, lowStock });
+  } catch (err) {
+    next(err);
+  }
+};
+
 module.exports = {
   createProduct,
   getMyProducts,
@@ -150,4 +171,5 @@ module.exports = {
   getProductById,
   updateProduct,
   deleteProduct,
+  dashboardStats,
 };
