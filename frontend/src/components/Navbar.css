@@ -1,0 +1,61 @@
+/* frontend/src/components/Navbar.css */
+
+.navbar {
+  height: 70px;
+  padding: 0 40px;
+  background: #7d95d0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+  font-family: Arial, sans-serif;
+}
+
+/* BRAND — BIG TEXT (FIXED) */
+.navbar-brand a {
+  font-size: 22px;        /* ✅ ORIGINAL SIZE */
+  font-weight: bold;
+  color: #000000;
+  text-decoration: none;
+}
+
+/* Links container */
+.navbar-links {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+/* Navbar links ONLY (not brand) */
+.navbar-links a {
+  text-decoration: none;
+  color: #000000;
+  font-size: 15px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  transition: background-color 0.3s ease;
+}
+
+/* Home / About / Contact hover */
+.public-link:hover {
+  background-color: #f3f4f6;
+  color: #000000;
+}
+
+/* Logout */
+.navbar .logout-btn {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 6px;
+  background-color: #ed0000 !important;
+  color: #000000 !important;   /* 🔒 FORCE BLACK */
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.navbar .logout-btn:hover {
+  background-color: #c70000 !important;
+  color: #000000 !important;
+}
+

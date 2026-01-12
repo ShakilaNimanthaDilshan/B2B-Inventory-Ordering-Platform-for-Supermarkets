@@ -10,7 +10,7 @@ import { AuthProvider } from "./context/AuthContext";
 import PrivateRoute from "./components/PrivateRoute";
 
 import Navbar from "./components/Navbar";
-
+import Footer from "./components/Footer";
 import HomePage from "./pages/HomePage";
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
@@ -22,7 +22,7 @@ import PendingApprovalPage from "./pages/PendingApprovalPage";
 import AdminUsersPage from "./pages/AdminUsersPage";
 import SupplierOrders from "./pages/supplier/OrderPage/SupplierOrders";
 
-import ViewProducts from "./pages/supplier/ProductPage/ViewProducts";
+import ViewProducts from "./pages/supplier/ProductPage/ViewProducts
 import SupplierBuyers from "./pages/supplier/SupplierBuyers/SupplierBuyers";
 
 // ...
@@ -92,6 +92,8 @@ const App = () => {
           </Route>
         </Routes>
       </Router>
+
+      <Footer />
     </AuthProvider>
   );
 };

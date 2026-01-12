@@ -2,6 +2,7 @@
 import React from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import "./Navbar.css";
 
 const Navbar = () => {
   const { user, handleLogout } = useAuth();
@@ -15,50 +16,51 @@ const Navbar = () => {
   return (
     <nav className="navbar">
       <div className="navbar-brand">
-        <Link to="/">Inventory System</Link>
+        <Link to="/">📦 BridgeMart </Link>
       </div>
 
       <div className="navbar-links">
-        {!user && (
-          <>
-            <Link to="/login" className="navbar-link">
-              Login
-            </Link>
-            <Link to="/register" className="navbar-link">
-              Register
-            </Link>
-          </>
-        )}
+        {/* Public links */}
+        <Link to="/" className="nav-link public-link">
+          Home
+        </Link>
+        <Link to="/about" className="nav-link public-link">
+          About
+        </Link>
+        <Link to="/contact" className="nav-link public-link">
+          Contact
+        </Link>
 
+        {/* Role-based links */}
         {user && (
           <>
             {user.role === "admin" && (
               <>
-                <Link to="/admin/dashboard" className="navbar-link">
-                  Admin Dashboard
+                <Link to="/admin/dashboard" className="nav-link">
+                  Dashboard
                 </Link>
-                <Link to="/admin/pending-users" className="navbar-link">
-                  Pending Users
+                <Link to="/admin/pending-users" className="nav-link">
+                  Pending
                 </Link>
-                <Link to="/admin/users" className="navbar-link">
-                  Manage Users
+                <Link to="/admin/users" className="nav-link">
+                  Users
                 </Link>
               </>
             )}
 
             {user.role === "supplier" && (
-              <Link to="/supplier/dashboard" className="navbar-link">
-                Supplier Dashboard
+              <Link to="/supplier/dashboard" className="nav-link">
+                Supplier
               </Link>
             )}
 
             {user.role === "supermarket" && (
-              <Link to="/supermarket/dashboard" className="navbar-link">
-                Supermarket Dashboard
+              <Link to="/supermarket/dashboard" className="nav-link">
+                Supermarket
               </Link>
             )}
 
-            <button className="navbar-logout-btn" onClick={logout}>
+            <button className="logout-btn" onClick={logout}>
               Logout
             </button>
           </>
