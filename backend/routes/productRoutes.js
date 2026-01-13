@@ -2,11 +2,7 @@ const express = require("express");
 const router = express.Router();
 
 const { protect, authorizeRoles } = require("../middleware/authMiddleware");
-
-const upload = require("../middleware/uploadMiddleware"); // ✅ Image upload fix
-
 const upload = require("../middleware/uploadMiddleware");
-
 
 const {
   createProduct,
@@ -15,18 +11,14 @@ const {
   getProductById,
   updateProduct,
   deleteProduct,
-
-  dashboardStats, // ✅ Make sure this is imported
-   dashboardStats,
-
+  dashboardStats,
 } = require("../controllers/productController");
 
 // ==========================================
 // SPECIFIC ROUTES (MUST BE AT THE TOP)
 // ==========================================
 
-
-// 1. Dashboard Stats (Fix for CastError)
+// 1. Supplier Dashboard Stats
 router.get(
   "/dashboard-stats",
   protect,
@@ -34,10 +26,7 @@ router.get(
   dashboardStats
 );
 
-// 2. Supplier: Get Own Products
-
-// SUPPLIER: create product
-// SUPPLIER: create product
+// 2. Supplier: Create Product
 router.post(
   "/",
   protect,
@@ -46,19 +35,15 @@ router.post(
   createProduct
 );
 
-// SUPPLIER: own products
-router.get("/my-products", protect, authorizeRoles("supplier"), getMyProducts);
-
-//stats
-
+// 3. Supplier: Get Own Products
 router.get(
-  "/dashboard-stats",
+  "/my-products",
   protect,
   authorizeRoles("supplier"),
-  dashboardStats
+  getMyProducts
 );
 
-// 3. Supermarket: Get All Products (Filtered by district)
+// 4. Supermarket: Get All Products (by district)
 router.get(
   "/",
   protect,
@@ -66,44 +51,28 @@ router.get(
   getAllProducts
 );
 
-// 4. Supplier: Create Product (Added upload middleware)
-router.post(
-  "/",
-  protect,
-  authorizeRoles("supplier"),
-  upload.single("image"), // ✅ Fix for "Cannot add item"
-  createProduct
-);
-
 // ==========================================
 // DYNAMIC ROUTES (MUST BE AT THE BOTTOM)
 // ==========================================
 
-// 5. Get Product by ID (This catches anything like /:id)
+// 5. Get Product by ID
 router.get("/:id", protect, getProductById);
 
-// 6. Update Product (Added upload middleware)
-router.patch(
-  "/:id",
-  protect,
-  upload.single("image"), // ✅ Fix for image update
-
-
-// UPDATE product
+// 6. Update Product (Supplier only)
 router.patch(
   "/:id",
   protect,
   authorizeRoles("supplier"),
   upload.single("image"),
-
   updateProduct
 );
 
-// 7. Delete Product
-router.delete("/:id", protect, deleteProduct);
-
-module.exports = router;
-
-
+// 7. Delete Product (Supplier only)
+router.delete(
+  "/:id",
+  protect,
+  authorizeRoles("supplier"),
+  deleteProduct
+);
 
 module.exports = router;
