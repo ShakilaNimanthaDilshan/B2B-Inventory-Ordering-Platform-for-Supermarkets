@@ -12,7 +12,6 @@ const orderSchema = mongoose.Schema(
       ref: "User",
       required: true,
     },
-
     items: [
       {
         product: {
@@ -20,42 +19,42 @@ const orderSchema = mongoose.Schema(
           ref: "Product",
           required: true,
         },
-        name: { type: String, required: true },      // snapshot
+        name: { type: String, required: true },
         quantity: { type: Number, required: true },
-        price: { type: Number, required: true },     // unit price
+        price: { type: Number, required: true },
       },
     ],
-
     totalAmount: {
       type: Number,
       required: true,
     },
-
     deliveryAddress: {
       type: String,
       required: true,
     },
-
     note: {
       type: String,
-      default: "",
     },
-
+    // ✅ Payment Logic
+    paymentMethod: {
+      type: String,
+      enum: ["Cash", "Card"],
+      default: "Cash",
+    },
+    paymentStatus: {
+      type: String,
+      enum: ["Pending", "Paid", "Failed"],
+      default: "Pending",
+    },
+    // ✅ Status Enum (Must include 'Accepted' and 'Rejected')
     status: {
       type: String,
-      enum: ["pending", "approved", "rejected", "dispatched", "delivered"],
-      default: "pending",
+      enum: ["Pending", "Accepted", "Shipped", "Delivered", "Rejected", "Cancelled"],
+      default: "Pending",
     },
-
     district: {
       type: String,
       required: true,
-    },
-
-    paymentMethod: {
-      type: String,
-      enum: ["credit", "cod", "bank"],
-      default: "credit",
     },
   },
   {

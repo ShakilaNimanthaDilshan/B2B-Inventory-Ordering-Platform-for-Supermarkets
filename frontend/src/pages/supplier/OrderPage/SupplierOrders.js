@@ -1,7 +1,11 @@
 import React, { useState, useEffect } from "react";
-import SupplierSidebar from "../Suppliersidebar";
+// ✅ FIXED PATHS HERE:
+import SupplierSidebar from "../Suppliersidebar"; 
 import SupplierTopbar from "../SupplierTopbar";
-import axios from "../../../api/axiosInstance"; // Axios import කරගන්න
+
+import axios from "../../../api/axiosInstance";
+import { generateInvoice } from "../../../utils/invoiceGenerator"; 
+
 import "./SupplierOrders.css";
 
 const SupplierOrders = () => {
@@ -11,7 +15,6 @@ const SupplierOrders = () => {
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
 
-  // 1. Backend එකෙන් Orders ලබා ගැනීම
   useEffect(() => {
     fetchOrders();
   }, []);
@@ -19,7 +22,7 @@ const SupplierOrders = () => {
   const fetchOrders = async () => {
     try {
       setLoading(true);
-      const response = await axios.get("/orders/supplier"); // අපි කලින් හදපු backend route එක
+      const response = await axios.get("/orders/supplier");
       setOrders(response.data);
     } catch (error) {
       console.error("Error fetching orders:", error);
@@ -28,12 +31,13 @@ const SupplierOrders = () => {
     }
   };
 
-  // 2. Order Status Update කිරීම (Accept/Reject)
   const handleStatusUpdate = async (orderId, newStatus) => {
     try {
-      await axios.patch(`/orders/${orderId}/status`, { status: newStatus });
+      console.log(`Updating Order: ${orderId} to ${newStatus}`);
       
-      // Update local state to reflect changes immediately
+      const response = await axios.patch(`/orders/${orderId}/status`, { status: newStatus });
+      console.log("Update success:", response.data);
+
       setOrders(orders.map(order => 
         order._id === orderId ? { ...order, status: newStatus } : order
       ));
@@ -44,12 +48,11 @@ const SupplierOrders = () => {
       
       alert(`Order marked as ${newStatus}`);
     } catch (error) {
-      console.error("Error updating status:", error);
-      alert("Failed to update status");
+      console.error("Error updating status:", error.response?.data || error);
+      alert(error.response?.data?.message || "Failed to update status");
     }
   };
 
-  // --- Filter Logic ---
   const filteredOrders = orders.filter((order) => {
     const matchesStatus = activeTab === "All" || order.status === activeTab;
     const customerName = order.supermarket ? order.supermarket.name : "Unknown";
@@ -59,29 +62,23 @@ const SupplierOrders = () => {
     return matchesStatus && matchesSearch;
   });
 
-  // --- Stats Calculation ---
-  const stats = {
-    pending: orders.filter((o) => o.status === "Pending").length,
-    revenue: orders.reduce((acc, curr) => acc + (curr.totalAmount || 0), 0),
-    totalOrders: orders.length,
-  };
-
-  // --- Status Color Logic ---
   const getStatusClass = (status) => {
     switch (status) {
       case "Pending": return "badge-pending";
-      case "Accepted": // Changed from Shipped for consistency
+      case "Accepted": return "badge-shipped"; 
       case "Shipped": return "badge-shipped";
       case "Delivered": return "badge-delivered";
-      case "Rejected": // Changed from Cancelled
-      case "Cancelled": return "badge-cancelled";
+      case "Rejected": return "badge-cancelled";
       default: return "";
     }
   };
 
-  // Date formatter
-  const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString("en-GB");
+  const getPaymentBadge = (status) => {
+    if (status === "Paid") {
+        return <span style={{backgroundColor: '#dcfce7', color: '#166534', padding: '4px 8px', borderRadius: '4px', fontSize: '12px', fontWeight: '600'}}>PAID ✅</span>
+    } else {
+        return <span style={{backgroundColor: '#fef9c3', color: '#854d0e', padding: '4px 8px', borderRadius: '4px', fontSize: '12px', fontWeight: '600'}}>PENDING ⏳</span>
+    }
   };
 
   return (
@@ -89,29 +86,12 @@ const SupplierOrders = () => {
       <SupplierSidebar />
       <div className="supplier-main-content">
         <SupplierTopbar />
-
         <div className="orders-page-container">
-          {/* 1. Header & Stats Section */}
+          
           <div className="orders-header">
-            <div>
-              <h1 className="page-title">Order Management</h1>
-              <p className="page-subtitle">Manage and track your incoming orders</p>
-            </div>
-            <div className="header-stats">
-              <div className="stat-pill">
-                <span className="stat-label">Pending</span>
-                <span className="stat-value warning">{stats.pending}</span>
-              </div>
-              <div className="stat-pill">
-                <span className="stat-label">Total Revenue</span>
-                <span className="stat-value success">
-                  Rs. {(stats.revenue / 1000).toFixed(1)}k
-                </span>
-              </div>
-            </div>
+            <h1 className="page-title">Order Management</h1>
           </div>
 
-          {/* 2. Controls Section */}
           <div className="controls-section">
             <div className="tabs-container">
               {["All", "Pending", "Accepted", "Delivered", "Rejected"].map((tab) => (
@@ -124,20 +104,20 @@ const SupplierOrders = () => {
                 </button>
               ))}
             </div>
+            {/* Search Input */}
             <div className="search-wrapper">
-              <input
-                type="text"
-                placeholder="Search order ID or customer..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
+                <input 
+                    type="text" 
+                    placeholder="Search by ID or Customer..." 
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                />
             </div>
           </div>
 
-          {/* 3. Orders Table */}
           <div className="table-card">
             {loading ? (
-                <div style={{padding: "20px", textAlign: "center"}}>Loading orders...</div>
+                <div style={{padding: "20px", textAlign: "center"}}>Loading...</div>
             ) : (
             <table className="orders-table">
               <thead>
@@ -145,50 +125,33 @@ const SupplierOrders = () => {
                   <th>Order ID</th>
                   <th>Customer</th>
                   <th>Date</th>
-                  <th>Items</th>
-                  <th>Total Amount</th>
+                  <th>Total</th>
+                  <th>Payment</th>
                   <th>Status</th>
-                  <th className="action-col">Actions</th>
+                  <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {filteredOrders.length > 0 ? (
                   filteredOrders.map((order) => (
-                    <tr key={order._id} className="order-row">
+                    <tr key={order._id}>
                       <td className="id-cell">...{order._id.slice(-6)}</td>
-                      <td className="customer-cell">
-                        <div className="customer-name">
-                          {order.supermarket ? order.supermarket.name : "Unknown Store"}
-                        </div>
-                        <div className="payment-method">{order.paymentMethod || "Credit"}</div>
-                      </td>
-                      <td>{formatDate(order.createdAt)}</td>
-                      <td>{order.items.length} Items</td>
-                      <td className="amount-cell">
-                        Rs. {(order.totalAmount || 0).toLocaleString()}
-                      </td>
+                      <td>{order.supermarket?.name}</td>
+                      <td>{new Date(order.createdAt).toLocaleDateString()}</td>
+                      <td>Rs. {order.totalAmount.toLocaleString()}</td>
+                      <td>{getPaymentBadge(order.paymentStatus)}</td>
                       <td>
                         <span className={`status-badge ${getStatusClass(order.status)}`}>
                           {order.status}
                         </span>
                       </td>
-                      <td className="action-col">
-                        <button
-                          className="btn-icon"
-                          onClick={() => setSelectedOrder(order)}
-                          title="View Details"
-                        >
-                          View &rarr;
-                        </button>
+                      <td>
+                        <button className="btn-icon" onClick={() => setSelectedOrder(order)}>View</button>
                       </td>
                     </tr>
                   ))
                 ) : (
-                  <tr>
-                    <td colSpan="7" className="empty-state">
-                      No orders found
-                    </td>
-                  </tr>
+                  <tr><td colSpan="7" className="empty-state">No orders found</td></tr>
                 )}
               </tbody>
             </table>
@@ -197,94 +160,73 @@ const SupplierOrders = () => {
         </div>
       </div>
 
-      {/* 4. Details Modal */}
       {selectedOrder && (
         <div className="modal-overlay" onClick={() => setSelectedOrder(null)}>
           <div className="order-modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <div>
-                <h2>Order #{selectedOrder._id.slice(-6)}</h2>
-                <span className={`status-badge ${getStatusClass(selectedOrder.status)}`}>
-                  {selectedOrder.status}
-                </span>
+              <h2>Order #{selectedOrder._id.slice(-6)}</h2>
+              <div style={{display:'flex', gap:'10px'}}>
+                  <button 
+                    className="btn-secondary" 
+                    onClick={() => generateInvoice(selectedOrder)}
+                    style={{background: '#4f46e5', color: '#fff', border: 'none', display:'flex', alignItems:'center', gap:'5px'}}
+                  >
+                    <span>📄</span> Invoice
+                  </button>
+                  <button className="close-btn" onClick={() => setSelectedOrder(null)}>×</button>
               </div>
-              <button className="close-btn" onClick={() => setSelectedOrder(null)}>
-                ×
-              </button>
             </div>
 
             <div className="modal-body">
-              <div className="customer-section">
-                <h3>Customer Details</h3>
-                <p>
-                  <strong>Store:</strong> {selectedOrder.supermarket ? selectedOrder.supermarket.name : "Unknown"}
-                </p>
-                <p>
-                    <strong>Email:</strong> {selectedOrder.supermarket ? selectedOrder.supermarket.email : "-"}
-                </p>
-                <p>
-                  <strong>Date:</strong> {formatDate(selectedOrder.createdAt)}
-                </p>
+              <div style={{display:'flex', justifyContent:'space-between', marginBottom:'20px'}}>
+                  <div>
+                    <p style={{margin:'5px 0', fontSize:'14px', color:'#666'}}>Customer</p>
+                    <p style={{fontWeight:'bold', margin:0}}>{selectedOrder.supermarket?.name}</p>
+                    <p style={{margin:0, fontSize:'13px'}}>{selectedOrder.supermarket?.email}</p>
+                  </div>
+                  <div style={{textAlign:'right'}}>
+                    <p style={{margin:'5px 0', fontSize:'14px', color:'#666'}}>Delivery To</p>
+                    <p style={{fontWeight:'bold', margin:0}}>{selectedOrder.deliveryAddress}</p>
+                  </div>
               </div>
-
-              <h3>Order Items</h3>
+              
+              <h3>Items</h3>
               <div className="modal-table-wrapper">
                 <table className="modal-table">
-                  <thead>
-                    <tr>
-                      <th>Product</th>
-                      <th className="text-right">Qty</th>
-                      <th className="text-right">Price</th>
-                      <th className="text-right">Total</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {selectedOrder.items.map((item, idx) => (
-                      <tr key={idx}>
-                        <td>{item.name || "Product Name"}</td>
-                        <td className="text-right">{item.quantity || item.qty}</td>
-                        <td className="text-right">{item.price}</td>
-                        <td className="text-right">
-                          {((item.quantity || 0) * (item.price || 0)).toLocaleString()}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
+                    <thead>
+                        <tr><th>Item</th><th style={{textAlign:'right'}}>Qty</th><th style={{textAlign:'right'}}>Total</th></tr>
+                    </thead>
+                    <tbody>
+                        {selectedOrder.items.map((item, i) => (
+                            <tr key={i}>
+                                <td>{item.name}</td>
+                                <td style={{textAlign:'right'}}>{item.quantity}</td>
+                                <td style={{textAlign:'right'}}>{(item.price * item.quantity).toLocaleString()}</td>
+                            </tr>
+                        ))}
+                    </tbody>
                 </table>
               </div>
-
-              <div className="order-total">
-                <span>Total Amount:</span>
-                <span className="total-price">
-                  Rs. {(selectedOrder.totalAmount || 0).toLocaleString()}
-                </span>
+              <div style={{textAlign:'right', marginTop:'15px', fontSize:'18px', fontWeight:'bold'}}>
+                  Total: Rs. {selectedOrder.totalAmount.toLocaleString()}
               </div>
             </div>
 
             <div className="modal-footer">
-              {/* Only show Action buttons if Pending */}
-              {selectedOrder.status === "Pending" ? (
+              {selectedOrder.status === "Pending" && (
                 <>
-                  <button 
-                    className="btn-reject"
-                    onClick={() => handleStatusUpdate(selectedOrder._id, "Rejected")}
-                  >
-                    Reject Order
-                  </button>
-                  <button 
-                    className="btn-accept"
-                    onClick={() => handleStatusUpdate(selectedOrder._id, "Accepted")}
-                  >
-                    Accept Order
-                  </button>
+                  <button className="btn-reject" onClick={() => handleStatusUpdate(selectedOrder._id, "Rejected")}>Reject</button>
+                  <button className="btn-accept" onClick={() => handleStatusUpdate(selectedOrder._id, "Accepted")}>Accept Order</button>
                 </>
-              ) : (
-                <button
-                  className="btn-secondary"
-                  onClick={() => setSelectedOrder(null)}
-                >
-                  Close
-                </button>
+              )}
+              {selectedOrder.status === "Accepted" && (
+                <button className="btn-accept" onClick={() => handleStatusUpdate(selectedOrder._id, "Shipped")}>Mark as Shipped</button>
+              )}
+              {selectedOrder.status === "Shipped" && (
+                <button className="btn-accept" onClick={() => handleStatusUpdate(selectedOrder._id, "Delivered")}>Mark as Delivered</button>
+              )}
+              {["Delivered", "Rejected", "Cancelled"].includes(selectedOrder.status) && (
+                 <button className="btn-secondary" onClick={() => setSelectedOrder(null)}>Close</button>
               )}
             </div>
           </div>

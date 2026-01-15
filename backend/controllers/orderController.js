@@ -5,18 +5,20 @@ const Product = require("../models/Product");
 /**
  * 1. Create Order (Supermarket)
  */
+// backend/controllers/orderController.js - createOrder function ONLY
+
 const createOrder = async (req, res) => {
   try {
-    const { items, totalAmount, supplierId, deliveryAddress, note } = req.body;
+    const { items, totalAmount, supplierId, deliveryAddress, note, paymentMethod } = req.body;
 
     if (!items || items.length === 0) {
-      return res.status(400).json({ message: "No order items found" });
+      return res.status(400).json({ message: "No order items" });
     }
-    if (!supplierId) {
-      return res.status(400).json({ message: "Supplier ID is missing" });
-    }
-    if (!deliveryAddress) {
-      return res.status(400).json({ message: "Delivery address is required" });
+
+    // ✅ Payment Logic: Card නම් කෙලින්ම Paid, නැත්නම් Pending
+    let initialPaymentStatus = "Pending";
+    if (paymentMethod === "Card") {
+      initialPaymentStatus = "Paid";
     }
 
     const order = new Order({
@@ -31,14 +33,17 @@ const createOrder = async (req, res) => {
       totalAmount,
       deliveryAddress,
       note,
-      status: "pending",
+      paymentMethod: paymentMethod || "Cash", // Default to Cash
+      paymentStatus: initialPaymentStatus,    // Auto set to Paid or Pending
+      status: "Pending",
       district: req.user.district,
     });
 
     const createdOrder = await order.save();
     res.status(201).json(createdOrder);
   } catch (error) {
-    res.status(500).json({ message: "Order creation failed: " + error.message });
+    console.error("Order Create Error:", error); // Terminal එකේ Error එක පෙන්නන්න
+    res.status(500).json({ message: error.message });
   }
 };
 
