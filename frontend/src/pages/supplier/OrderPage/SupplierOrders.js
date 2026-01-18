@@ -1,132 +1,83 @@
-import React, { useEffect, useMemo, useState } from "react";
-import SupplierSidebar from "../Suppliersidebar";
+import React, { useState, useEffect } from "react";
+// ✅ FIXED PATHS HERE:
+import SupplierSidebar from "../Suppliersidebar"; 
 import SupplierTopbar from "../SupplierTopbar";
+
 import axios from "../../../api/axiosInstance";
+import { generateInvoice } from "../../../utils/invoiceGenerator"; 
+
 import "./SupplierOrders.css";
-
-const toUiStatus = (s) => {
-  const val = (s || "").toLowerCase();
-  if (val === "pending") return "Pending";
-  if (val === "approved") return "Approved";
-  if (val === "rejected") return "Rejected";
-  if (val === "dispatched" || val === "shipped") return "Dispatched";
-  if (val === "delivered") return "Delivered";
-  return "Pending";
-};
-
-const normalizeOrder = (o) => {
-  const customerName = o?.supermarket?.name || "Unknown Customer";
-
-  const payment =
-    o?.paymentMethod === "credit"
-      ? "Credit (30 Days)"
-      : o?.paymentMethod === "cod"
-      ? "Cash on Delivery"
-      : o?.paymentMethod === "bank"
-      ? "Bank Transfer"
-      : o?.paymentMethod || "—";
-
-  const items = Array.isArray(o?.items)
-    ? o.items.map((it) => ({
-        name: it?.name || it?.product?.name || "Product",
-        qty: Number(it?.qty || 0),
-        price: Number(it?.price || 0),
-      }))
-    : [];
-
-  const itemCount = items.reduce((sum, it) => sum + (it.qty || 0), 0);
-
-  const id = o?._id ? `ORD-${String(o._id).slice(-6).toUpperCase()}` : "ORD-XXXX";
-  const dateStr = o?.createdAt;
-  const date = dateStr ? new Date(dateStr).toISOString().slice(0, 10) : "";
-
-  return {
-    id,
-    customer: customerName,
-    date,
-    itemCount,
-    total: Number(o?.totalAmount ?? 0),
-    status: toUiStatus(o?.status),
-    paymentMethod: payment,
-    items,
-    _rawId: o?._id,
-  };
-};
 
 const SupplierOrders = () => {
   const [orders, setOrders] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("All");
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
-  const [loading, setLoading] = useState(true);
-  const [errorMsg, setErrorMsg] = useState("");
 
   useEffect(() => {
-    const fetchOrders = async () => {
-      try {
-        setLoading(true);
-        setErrorMsg("");
-        const res = await axios.get("/orders/supplier");
-        const list = Array.isArray(res.data) ? res.data : [];
-        setOrders(list.map(normalizeOrder));
-      } catch (err) {
-        setErrorMsg(err?.response?.data?.message || "Failed to load orders");
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchOrders();
   }, []);
 
-  const filteredOrders = useMemo(() => {
-    return orders.filter((order) => {
-      const matchesStatus = activeTab === "All" || order.status === activeTab;
-      const matchesSearch =
-        order.customer.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        order.id.toLowerCase().includes(searchTerm.toLowerCase());
-      return matchesStatus && matchesSearch;
-    });
-  }, [orders, activeTab, searchTerm]);
+  const fetchOrders = async () => {
+    try {
+      setLoading(true);
+      const response = await axios.get("/orders/supplier");
+      setOrders(response.data);
+    } catch (error) {
+      console.error("Error fetching orders:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  const stats = useMemo(() => {
-    return {
-      pending: orders.filter((o) => o.status === "Pending").length,
-      revenue: orders.reduce((acc, curr) => acc + (curr.total || 0), 0),
-    };
-  }, [orders]);
+  const handleStatusUpdate = async (orderId, newStatus) => {
+    try {
+      console.log(`Updating Order: ${orderId} to ${newStatus}`);
+      
+      const response = await axios.patch(`/orders/${orderId}/status`, { status: newStatus });
+      console.log("Update success:", response.data);
+
+      setOrders(orders.map(order => 
+        order._id === orderId ? { ...order, status: newStatus } : order
+      ));
+      
+      if (selectedOrder && selectedOrder._id === orderId) {
+        setSelectedOrder({ ...selectedOrder, status: newStatus });
+      }
+      
+      alert(`Order marked as ${newStatus}`);
+    } catch (error) {
+      console.error("Error updating status:", error.response?.data || error);
+      alert(error.response?.data?.message || "Failed to update status");
+    }
+  };
+
+  const filteredOrders = orders.filter((order) => {
+    const matchesStatus = activeTab === "All" || order.status === activeTab;
+    const customerName = order.supermarket ? order.supermarket.name : "Unknown";
+    const matchesSearch =
+      customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      order._id.toLowerCase().includes(searchTerm.toLowerCase());
+    return matchesStatus && matchesSearch;
+  });
 
   const getStatusClass = (status) => {
     switch (status) {
       case "Pending": return "badge-pending";
-      case "Dispatched": return "badge-out_for_delivery";
+      case "Accepted": return "badge-shipped"; 
+      case "Shipped": return "badge-shipped";
       case "Delivered": return "badge-delivered";
       case "Rejected": return "badge-cancelled";
-      case "Approved": return "badge-approved";
       default: return "";
     }
   };
 
-  const updateStatus = async (order, newStatus) => {
-    if (!order._rawId) return;
-
-    // optimistic UI
-    setOrders((prev) =>
-      prev.map((o) => (o.id === order.id ? { ...o, status: newStatus } : o))
-    );
-    setSelectedOrder((prev) => (prev ? { ...prev, status: newStatus } : prev));
-
-    const backendStatus =
-      newStatus === "Pending" ? "pending" :
-      newStatus === "Approved" ? "approved" :
-      newStatus === "Rejected" ? "rejected" :
-      newStatus === "Dispatched" ? "dispatched" :
-      newStatus === "Delivered" ? "delivered" : "pending";
-
-    try {
-      await axios.patch(`/orders/${order._rawId}/status`, { status: backendStatus });
-    } catch (err) {
-      alert(err?.response?.data?.message || "Status update failed");
+  const getPaymentBadge = (status) => {
+    if (status === "Paid") {
+        return <span style={{backgroundColor: '#dcfce7', color: '#166534', padding: '4px 8px', borderRadius: '4px', fontSize: '12px', fontWeight: '600'}}>PAID ✅</span>
+    } else {
+        return <span style={{backgroundColor: '#fef9c3', color: '#854d0e', padding: '4px 8px', borderRadius: '4px', fontSize: '12px', fontWeight: '600'}}>PENDING ⏳</span>
     }
   };
 
@@ -135,31 +86,15 @@ const SupplierOrders = () => {
       <SupplierSidebar />
       <div className="supplier-main-content">
         <SupplierTopbar />
-
         <div className="orders-page-container">
+          
           <div className="orders-header">
-            <div>
-              <h1 className="page-title">Order Management</h1>
-              <p className="page-subtitle">Manage and track your incoming orders</p>
-            </div>
-
-            <div className="header-stats">
-              <div className="stat-pill">
-                <span className="stat-label">Pending</span>
-                <span className="stat-value warning">{stats.pending}</span>
-              </div>
-              <div className="stat-pill">
-                <span className="stat-label">Total Revenue</span>
-                <span className="stat-value success">
-                  Rs. {(stats.revenue / 1000).toFixed(1)}k
-                </span>
-              </div>
-            </div>
+            <h1 className="page-title">Order Management</h1>
           </div>
 
           <div className="controls-section">
             <div className="tabs-container">
-              {["All", "Pending", "Dispatched", "Delivered"].map((tab) => (
+              {["All", "Pending", "Accepted", "Delivered", "Rejected"].map((tab) => (
                 <button
                   key={tab}
                   className={`tab-btn ${activeTab === tab ? "active" : ""}`}
@@ -169,71 +104,59 @@ const SupplierOrders = () => {
                 </button>
               ))}
             </div>
-
+            {/* Search Input */}
             <div className="search-wrapper">
-              <input
-                type="text"
-                placeholder="Search order ID or customer..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
+                <input 
+                    type="text" 
+                    placeholder="Search by ID or Customer..." 
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                />
             </div>
           </div>
 
-          {loading ? (
-            <div className="loading-container">
-              <div className="spinner"></div>
-              <p>Loading orders...</p>
-            </div>
-          ) : errorMsg ? (
-            <div className="empty-state">{errorMsg}</div>
-          ) : (
-            <div className="table-card">
-              <table className="orders-table">
-                <thead>
-                  <tr>
-                    <th>Order ID</th>
-                    <th>Customer</th>
-                    <th>Date</th>
-                    <th>Items</th>
-                    <th>Total Amount</th>
-                    <th>Status</th>
-                    <th className="action-col">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredOrders.length > 0 ? (
-                    filteredOrders.map((order) => (
-                      <tr key={order.id} className="order-row">
-                        <td className="id-cell">{order.id}</td>
-                        <td className="customer-cell">
-                          <div className="customer-name">{order.customer}</div>
-                          <div className="payment-method">{order.paymentMethod}</div>
-                        </td>
-                        <td>{order.date}</td>
-                        <td>{order.itemCount} Items</td>
-                        <td className="amount-cell">Rs. {order.total.toLocaleString()}</td>
-                        <td>
-                          <span className={`status-badge ${getStatusClass(order.status)}`}>
-                            {order.status}
-                          </span>
-                        </td>
-                        <td className="action-col">
-                          <button className="btn-icon" onClick={() => setSelectedOrder(order)}>
-                            View →
-                          </button>
-                        </td>
-                      </tr>
-                    ))
-                  ) : (
-                    <tr>
-                      <td colSpan="7" className="empty-state">No orders found</td>
+          <div className="table-card">
+            {loading ? (
+                <div style={{padding: "20px", textAlign: "center"}}>Loading...</div>
+            ) : (
+            <table className="orders-table">
+              <thead>
+                <tr>
+                  <th>Order ID</th>
+                  <th>Customer</th>
+                  <th>Date</th>
+                  <th>Total</th>
+                  <th>Payment</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredOrders.length > 0 ? (
+                  filteredOrders.map((order) => (
+                    <tr key={order._id}>
+                      <td className="id-cell">...{order._id.slice(-6)}</td>
+                      <td>{order.supermarket?.name}</td>
+                      <td>{new Date(order.createdAt).toLocaleDateString()}</td>
+                      <td>Rs. {order.totalAmount.toLocaleString()}</td>
+                      <td>{getPaymentBadge(order.paymentStatus)}</td>
+                      <td>
+                        <span className={`status-badge ${getStatusClass(order.status)}`}>
+                          {order.status}
+                        </span>
+                      </td>
+                      <td>
+                        <button className="btn-icon" onClick={() => setSelectedOrder(order)}>View</button>
+                      </td>
                     </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-          )}
+                  ))
+                ) : (
+                  <tr><td colSpan="7" className="empty-state">No orders found</td></tr>
+                )}
+              </tbody>
+            </table>
+            )}
+          </div>
         </div>
       </div>
 
@@ -241,61 +164,69 @@ const SupplierOrders = () => {
         <div className="modal-overlay" onClick={() => setSelectedOrder(null)}>
           <div className="order-modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <div>
-                <h2>{selectedOrder.id}</h2>
-                <span className={`status-badge ${getStatusClass(selectedOrder.status)}`}>
-                  {selectedOrder.status}
-                </span>
+              <h2>Order #{selectedOrder._id.slice(-6)}</h2>
+              <div style={{display:'flex', gap:'10px'}}>
+                  <button 
+                    className="btn-secondary" 
+                    onClick={() => generateInvoice(selectedOrder)}
+                    style={{background: '#4f46e5', color: '#fff', border: 'none', display:'flex', alignItems:'center', gap:'5px'}}
+                  >
+                    <span>📄</span> Invoice
+                  </button>
+                  <button className="close-btn" onClick={() => setSelectedOrder(null)}>×</button>
               </div>
-              <button className="close-btn" onClick={() => setSelectedOrder(null)}>×</button>
             </div>
 
             <div className="modal-body">
-              <h3>Customer Details</h3>
-              <p><strong>Store:</strong> {selectedOrder.customer}</p>
-              <p><strong>Date:</strong> {selectedOrder.date}</p>
-              <p><strong>Payment:</strong> {selectedOrder.paymentMethod}</p>
-
-              <h3>Order Items</h3>
-              <table className="modal-table">
-                <thead>
-                  <tr>
-                    <th>Product</th>
-                    <th className="text-right">Qty</th>
-                    <th className="text-right">Price</th>
-                    <th className="text-right">Total</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {selectedOrder.items.map((item, idx) => (
-                    <tr key={idx}>
-                      <td>{item.name}</td>
-                      <td className="text-right">{item.qty}</td>
-                      <td className="text-right">{item.price}</td>
-                      <td className="text-right">{(item.qty * item.price).toLocaleString()}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-
-              <div className="order-total">
-                <span>Total Amount:</span>
-                <span className="total-price">Rs. {selectedOrder.total.toLocaleString()}</span>
+              <div style={{display:'flex', justifyContent:'space-between', marginBottom:'20px'}}>
+                  <div>
+                    <p style={{margin:'5px 0', fontSize:'14px', color:'#666'}}>Customer</p>
+                    <p style={{fontWeight:'bold', margin:0}}>{selectedOrder.supermarket?.name}</p>
+                    <p style={{margin:0, fontSize:'13px'}}>{selectedOrder.supermarket?.email}</p>
+                  </div>
+                  <div style={{textAlign:'right'}}>
+                    <p style={{margin:'5px 0', fontSize:'14px', color:'#666'}}>Delivery To</p>
+                    <p style={{fontWeight:'bold', margin:0}}>{selectedOrder.deliveryAddress}</p>
+                  </div>
+              </div>
+              
+              <h3>Items</h3>
+              <div className="modal-table-wrapper">
+                <table className="modal-table">
+                    <thead>
+                        <tr><th>Item</th><th style={{textAlign:'right'}}>Qty</th><th style={{textAlign:'right'}}>Total</th></tr>
+                    </thead>
+                    <tbody>
+                        {selectedOrder.items.map((item, i) => (
+                            <tr key={i}>
+                                <td>{item.name}</td>
+                                <td style={{textAlign:'right'}}>{item.quantity}</td>
+                                <td style={{textAlign:'right'}}>{(item.price * item.quantity).toLocaleString()}</td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+              </div>
+              <div style={{textAlign:'right', marginTop:'15px', fontSize:'18px', fontWeight:'bold'}}>
+                  Total: Rs. {selectedOrder.totalAmount.toLocaleString()}
               </div>
             </div>
 
             <div className="modal-footer">
-              {selectedOrder.status === "Pending" ? (
+              {selectedOrder.status === "Pending" && (
                 <>
-                  <button className="btn-reject" onClick={() => updateStatus(selectedOrder, "Rejected")}>
-                    Reject Order
-                  </button>
-                  <button className="btn-accept" onClick={() => updateStatus(selectedOrder, "Approved")}>
-                    Accept Order
-                  </button>
+                  <button className="btn-reject" onClick={() => handleStatusUpdate(selectedOrder._id, "Rejected")}>Reject</button>
+                  <button className="btn-accept" onClick={() => handleStatusUpdate(selectedOrder._id, "Accepted")}>Accept Order</button>
                 </>
-              ) : (
-                <button className="btn-secondary" onClick={() => setSelectedOrder(null)}>Close</button>
+              )}
+              {selectedOrder.status === "Accepted" && (
+                <button className="btn-accept" onClick={() => handleStatusUpdate(selectedOrder._id, "Shipped")}>Mark as Shipped</button>
+              )}
+              {selectedOrder.status === "Shipped" && (
+                <button className="btn-accept" onClick={() => handleStatusUpdate(selectedOrder._id, "Delivered")}>Mark as Delivered</button>
+              )}
+              {["Delivered", "Rejected", "Cancelled"].includes(selectedOrder.status) && (
+                 <button className="btn-secondary" onClick={() => setSelectedOrder(null)}>Close</button>
               )}
             </div>
           </div>

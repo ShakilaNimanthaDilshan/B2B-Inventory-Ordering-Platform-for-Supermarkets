@@ -18,6 +18,8 @@ const ViewProducts = () => {
   const [editingProduct, setEditingProduct] = useState(null);
   const [file, setFile] = useState(null);
   const [showFilterDropdown, setShowFilterDropdown] = useState(false);
+
+  // District අයින් කළා, මොකද ඒක Backend එකෙන් auto ගන්නවා
   const [formData, setFormData] = useState({
     name: "",
     description: "",
@@ -32,20 +34,9 @@ const ViewProducts = () => {
   const BASE_URL = "http://localhost:5000";
 
   const categories = [
-    "Beverages",
-    "Dairy",
-    "Snacks",
-    "Frozen Foods",
-    "Canned Goods",
-    "Bakery",
-    "Meat",
-    "Produce",
-    "Condiments",
-    "Cleaning Supplies",
-    "Computers",
-    "Electronics",
-    "Personal Care",
-    "Other",
+    "Beverages", "Dairy", "Snacks", "Frozen Foods", "Canned Goods",
+    "Bakery", "Meat", "Produce", "Condiments", "Cleaning Supplies",
+    "Computers", "Electronics", "Personal Care", "Other",
   ];
 
   useEffect(() => {
@@ -128,6 +119,8 @@ const ViewProducts = () => {
       formDataToSend.append("price", formData.price);
       formDataToSend.append("stock", formData.stock);
       formDataToSend.append("category", formData.category);
+      
+      // District මෙතනින් යවන්නේ නෑ (Backend will handle it)
 
       if (file) {
         formDataToSend.append("image", file);
@@ -201,16 +194,12 @@ const ViewProducts = () => {
 
   const generateProductId = (index) => `2L${3500 - (startIndex + index) * 100}`;
 
-  // filter clear option
   const clearAllFilters = () => {
     setCategoryFilter("all");
     setStatusFilter("all");
     setSearchTerm("");
     setCurrentPage(1);
   };
-
-  // watch whre we slect in the filter
-  const isFilterActive = categoryFilter !== "all" || statusFilter !== "all";
 
   return (
     <div className="supplier-layout">
@@ -227,14 +216,7 @@ const ViewProducts = () => {
                 className={`view-btn ${viewMode === "list" ? "active" : ""}`}
                 onClick={() => setViewMode("list")}
               >
-                <svg
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                >
+               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <line x1="8" y1="6" x2="21" y2="6"></line>
                   <line x1="8" y1="12" x2="21" y2="12"></line>
                   <line x1="8" y1="18" x2="21" y2="18"></line>
@@ -248,14 +230,7 @@ const ViewProducts = () => {
                 className={`view-btn ${viewMode === "grid" ? "active" : ""}`}
                 onClick={() => setViewMode("grid")}
               >
-                <svg
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <rect x="3" y="3" width="7" height="7"></rect>
                   <rect x="14" y="3" width="7" height="7"></rect>
                   <rect x="14" y="14" width="7" height="7"></rect>
@@ -268,14 +243,7 @@ const ViewProducts = () => {
                   className="filter-btn"
                   onClick={() => setShowFilterDropdown(!showFilterDropdown)}
                 >
-                  <svg
-                    width="16"
-                    height="16"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                  >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
                   </svg>
                   Filter
@@ -309,7 +277,6 @@ const ViewProducts = () => {
                         <option value="out-of-stock">Out of Stock</option>
                       </select>
                     </div>
-                    {/* add Buton for filter dropdown */}
                     <button
                       className="reset-filter-link"
                       onClick={clearAllFilters}
@@ -322,14 +289,7 @@ const ViewProducts = () => {
             </div>
             <div className="toolbar-right">
               <button className="import-btn">
-                <svg
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
                   <polyline points="17 8 12 3 7 8"></polyline>
                   <line x1="12" y1="3" x2="12" y2="15"></line>
@@ -358,6 +318,7 @@ const ViewProducts = () => {
                     <th>Price</th>
                     <th>Status</th>
                     <th>Category</th>
+                    {/* District removed from table view since it is implied */}
                     <th>Stock</th>
                     <th>Update</th>
                     <th className="action-head">Action</th>
@@ -420,74 +381,71 @@ const ViewProducts = () => {
                         {formatDate(product.updatedAt || product.createdAt)}
                       </td>
 
-                      {/* --- THIS IS THE UPDATED ACTION CELL --- */}
-                      <td className="action-cell" data-label="Action">
-                        <div className="action-buttons">
-                          {/* View / Info Icon */}
-                          <button
-                            className="action-btn view"
-                            title="View Details"
-                          >
-                            <svg
-                              width="24"
-                              height="24"
-                              viewBox="0 0 24 24"
-                              fill="none"
-                              stroke="currentColor"
-                              strokeWidth="2"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                            >
-                              <circle cx="12" cy="12" r="10"></circle>
-                              <line x1="12" y1="16" x2="12" y2="12"></line>
-                              <line x1="12" y1="8" x2="12.01" y2="8"></line>
-                            </svg>
-                          </button>
 
-                          {/* Edit Icon */}
-                          <button
-                            className="action-btn edit"
-                            onClick={() => openEditModal(product)}
-                            title="Edit"
-                          >
-                            <svg
-                              width="24"
-                              height="24"
-                              viewBox="0 0 24 24"
-                              fill="none"
-                              stroke="currentColor"
-                              strokeWidth="2"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                            >
-                              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-                            </svg>
-                          </button>
+                     <td className="action-cell" data-label="Action">
+  <div className="action-buttons">
+    <button
+      className="action-btn view"
+      title="View Details"
+    >
+      <svg
+        width="24"
+        height="24"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <circle cx="12" cy="12" r="10"></circle>
+        <line x1="12" y1="16" x2="12" y2="12"></line>
+        <line x1="12" y1="8" x2="12.01" y2="8"></line>
+      </svg>
+    </button>
 
-                          {/* Delete Icon */}
-                          <button
-                            className="action-btn delete"
-                            onClick={() => handleDelete(product._id)}
-                            title="Delete"
-                          >
-                            <svg
-                              width="24"
-                              height="24"
-                              viewBox="0 0 24 24"
-                              fill="none"
-                              stroke="currentColor"
-                              strokeWidth="2"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                            >
-                              <polyline points="3 6 5 6 21 6"></polyline>
-                              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                            </svg>
-                          </button>
-                        </div>
-                      </td>
-                      {/* ------------------------------------- */}
+    <button
+      className="action-btn edit"
+      onClick={() => openEditModal(product)}
+      title="Edit"
+    >
+      <svg
+        width="24"
+        height="24"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+      </svg>
+    </button>
+
+    <button
+      className="action-btn delete"
+      onClick={() => handleDelete(product._id)}
+      title="Delete"
+    >
+      <svg
+        width="24"
+        height="24"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <polyline points="3 6 5 6 21 6"></polyline>
+        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+      </svg>
+    </button>
+  </div>
+</td>
+
                     </tr>
                   ))}
                 </tbody>
@@ -499,11 +457,9 @@ const ViewProducts = () => {
               )}
             </div>
           ) : (
-            /* Grid View Logic remains same but uses new classNames */
             <div className="products-grid">
               {paginatedProducts.map((product) => (
                 <div key={product._id} className="product-card">
-                  {/* ... Same as your existing Grid Code ... */}
                   <div className="card-image">
                     {product.image ? (
                       <img
@@ -536,7 +492,6 @@ const ViewProducts = () => {
 
           {totalPages > 1 && (
             <div className="pagination">
-              {/* Pagination logic remains same */}
               <button
                 className="page-btn"
                 disabled={currentPage === 1}
@@ -544,7 +499,6 @@ const ViewProducts = () => {
               >
                 ‹
               </button>
-              {/* ... etc ... */}
               <button
                 className="page-btn"
                 disabled={currentPage === totalPages}
@@ -556,7 +510,7 @@ const ViewProducts = () => {
           )}
         </div>
       </div>
-      {/* Modal Code remains same... */}
+      
       {showModal && (
         <div className="modal-overlay" onClick={closeModal}>
           <div className="product-modal" onClick={(e) => e.stopPropagation()}>
@@ -576,7 +530,6 @@ const ViewProducts = () => {
               </button>
             </div>
             <form onSubmit={handleSubmit} className="modal-form">
-              {/* Form inputs same as before */}
               <div className="form-group">
                 <label>Product Name</label>
                 <input
@@ -587,7 +540,9 @@ const ViewProducts = () => {
                   required
                 />
               </div>
-              {/* ... other inputs ... */}
+
+              {/* District Input එක මෙතනින් ඉවත් කළා */}
+
               <div className="form-group">
                 <label>Category</label>
                 <select

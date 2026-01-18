@@ -1,14 +1,21 @@
-// backend/controllers/productController.js
 const Product = require("../models/Product");
+const User = require("../models/User");
 
-// CREATE PRODUCT (supplier only)
+// 1. CREATE PRODUCT
 const createProduct = async (req, res, next) => {
   try {
     const body = req.body || {};
-    const { name, description, price, category, stock } = body; // ✅ FIXED
+    const { name, description, price, category, stock } = body;
 
-    if (!name || price === undefined || price === "")
+    if (!name || price === undefined || price === "") {
       return res.status(400).json({ message: "Name and price required" });
+    }
+
+    // Get supplier details
+    const supplierDetails = await User.findById(req.user.id);
+    if (!supplierDetails) {
+      return res.status(404).json({ message: "Supplier details not found" });
+    }
 
     const product = new Product({
       name,
@@ -17,10 +24,12 @@ const createProduct = async (req, res, next) => {
       category,
       stock: Number(stock || 0),
       supplier: req.user.id,
-      district: req.user.district,
+      district: supplierDetails.district, // auto district
     });
 
-    if (req.file) product.image = `/uploads/${req.file.filename}`;
+    if (req.file) {
+      product.image = `/uploads/${req.file.filename}`;
+    }
 
     await product.save();
     res.status(201).json(product);
@@ -29,12 +38,11 @@ const createProduct = async (req, res, next) => {
   }
 };
 
-// SUPPLIER: own products
+// 2. SUPPLIER: Get My Products
 const getMyProducts = async (req, res, next) => {
   try {
-    const products = await Product.find({
-      supplier: req.user.id,
-    }).sort({ createdAt: -1 });
+    const products = await Product.find({ supplier: req.user.id })
+      .sort({ createdAt: -1 });
 
     res.json(products);
   } catch (err) {
@@ -42,12 +50,12 @@ const getMyProducts = async (req, res, next) => {
   }
 };
 
-// SUPERMARKET: ONLY SAME DISTRICT PRODUCTS
+// 3. SUPERMARKET: Get All Products (by district)
 const getAllProducts = async (req, res, next) => {
   try {
     const q = {
       isActive: true,
-      district: req.user.district, // ✅ FILTER BY DISTRICT
+      district: req.user.district,
     };
 
     if (req.query.category) q.category = req.query.category;
@@ -62,16 +70,21 @@ const getAllProducts = async (req, res, next) => {
   }
 };
 
-// GET PRODUCT BY ID
+// 4. GET PRODUCT BY ID
 const getProductById = async (req, res, next) => {
   try {
-    const product = await Product.findById(req.params.id).populate(
-      "supplier",
-      "name email district"
-    );
-    if (!product) return res.status(404).json({ message: "Product not found" });
+    if (!req.params.id.match(/^[0-9a-fA-F]{24}$/)) {
+      return res.status(404).json({ message: "Product not found" });
+    }
 
-    // ✅ EXTRA SAFETY
+    const product = await Product.findById(req.params.id)
+      .populate("supplier", "name email district");
+
+    if (!product) {
+      return res.status(404).json({ message: "Product not found" });
+    }
+
+    // supermarket can only view same district products
     if (
       req.user.role === "supermarket" &&
       product.district !== req.user.district
@@ -85,7 +98,7 @@ const getProductById = async (req, res, next) => {
   }
 };
 
-// UPDATE PRODUCT
+// 5. UPDATE PRODUCT
 const updateProduct = async (req, res, next) => {
   try {
     const product = await Product.findById(req.params.id);
@@ -95,21 +108,21 @@ const updateProduct = async (req, res, next) => {
       product.supplier.toString() !== req.user.id &&
       req.user.role !== "admin"
     ) {
-      return res
-        .status(403)
-        .json({ message: "Not authorized to edit this product" });
+      return res.status(403).json({ message: "Not authorized" });
     }
 
     const { name, description, price, category, stock, isActive } = req.body;
 
-    if (name !== undefined) product.name = name;
-    if (description !== undefined) product.description = description;
+    if (name) product.name = name;
+    if (description) product.description = description;
     if (price !== undefined) product.price = Number(price);
-    if (category !== undefined) product.category = category;
+    if (category) product.category = category;
     if (stock !== undefined) product.stock = Number(stock);
     if (isActive !== undefined) product.isActive = isActive;
 
-    if (req.file) product.image = `/uploads/${req.file.filename}`;
+    if (req.file) {
+      product.image = `/uploads/${req.file.filename}`;
+    }
 
     await product.save();
     res.json(product);
@@ -118,7 +131,7 @@ const updateProduct = async (req, res, next) => {
   }
 };
 
-// DELETE PRODUCT
+// 6. DELETE PRODUCT
 const deleteProduct = async (req, res, next) => {
   try {
     const product = await Product.findById(req.params.id);
@@ -128,9 +141,7 @@ const deleteProduct = async (req, res, next) => {
       product.supplier.toString() !== req.user.id &&
       req.user.role !== "admin"
     ) {
-      return res
-        .status(403)
-        .json({ message: "Not authorized to delete this product" });
+      return res.status(403).json({ message: "Not authorized" });
     }
 
     await product.deleteOne();
@@ -140,7 +151,7 @@ const deleteProduct = async (req, res, next) => {
   }
 };
 
-//dashboard-Stats
+// 7. DASHBOARD STATS
 const dashboardStats = async (req, res, next) => {
   try {
     const supplierId = req.user.id;
@@ -152,7 +163,6 @@ const dashboardStats = async (req, res, next) => {
       isActive: true,
     });
 
-    // low stock = stock <= 10 (same as frontend)
     const lowStock = await Product.countDocuments({
       supplier: supplierId,
       stock: { $lte: 10 },

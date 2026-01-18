@@ -15,23 +15,28 @@ const Navbar = () => {
 
   return (
     <nav className="navbar">
+      {/* Brand */}
       <div className="navbar-brand">
-        <Link to="/">📦 BridgeMart </Link>
+        <Link to="/">📦 BridgeMart</Link>
       </div>
 
       <div className="navbar-links">
-        {/* Public links */}
-        <Link to="/" className="nav-link public-link">
-          Home
-        </Link>
-        <Link to="/about" className="nav-link public-link">
-          About
-        </Link>
-        <Link to="/contact" className="nav-link public-link">
-          Contact
-        </Link>
+        {/* PUBLIC LINKS (only when NOT logged in) */}
+        {!user && (
+          <>
+            <Link to="/" className="nav-link public-link">
+              Home
+            </Link>
+            <Link to="/about" className="nav-link public-link">
+              About
+            </Link>
+            <Link to="/contact" className="nav-link public-link">
+              Contact
+            </Link>
+          </>
+        )}
 
-        {/* Role-based links */}
+        {/* ROLE-BASED LINKS (only when logged in) */}
         {user && (
           <>
             {user.role === "admin" && (
@@ -50,13 +55,13 @@ const Navbar = () => {
 
             {user.role === "supplier" && (
               <Link to="/supplier/dashboard" className="nav-link">
-                Supplier
+                Supplier Dashboard
               </Link>
             )}
 
             {user.role === "supermarket" && (
               <Link to="/supermarket/dashboard" className="nav-link">
-                Supermarket
+                Supermarket Dashboard
               </Link>
             )}
 
