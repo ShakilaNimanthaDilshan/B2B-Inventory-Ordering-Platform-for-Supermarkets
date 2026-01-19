@@ -5,13 +5,15 @@ import api from "../api/axiosInstance";
 const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null); // { id, name, role, isApproved }
-  const [token, setToken] = useState(localStorage.getItem("token"));
-  const [loading, setLoading] = useState(true); //  start as true
+  const [user, setUser] = useState(null);
+  const [token, setToken] = useState(
+    sessionStorage.getItem("token") // ✅ FIX
+  );
+  const [loading, setLoading] = useState(true);
 
+  // 🔁 Validate token on app load / refresh
   useEffect(() => {
     const fetchMe = async () => {
-      // if no token, we're definitely not logged in
       if (!token) {
         setUser(null);
         setLoading(false);
@@ -19,12 +21,11 @@ export const AuthProvider = ({ children }) => {
       }
 
       try {
-        setLoading(true);
         const res = await api.get("/auth/me");
         setUser(res.data);
       } catch (err) {
-        console.error(err);
-        handleLogout(); // token invalid → clear and go to logged-out state
+        console.error("Auth validation failed:", err);
+        handleLogout(); // invalid token → force logout
       } finally {
         setLoading(false);
       }
@@ -34,15 +35,19 @@ export const AuthProvider = ({ children }) => {
     // eslint-disable-next-line
   }, [token]);
 
+  // ✅ LOGIN
   const handleLogin = (token, user) => {
+    sessionStorage.setItem("token", token); // ✅ FIX
+    sessionStorage.setItem("user", JSON.stringify(user)); // optional
     setToken(token);
-    localStorage.setItem("token", token);
     setUser(user);
   };
 
+  // ✅ LOGOUT (IMPORTANT)
   const handleLogout = () => {
+    sessionStorage.removeItem("token"); // ✅ FIX
+    sessionStorage.removeItem("user");
     setToken(null);
-    localStorage.removeItem("token");
     setUser(null);
   };
 

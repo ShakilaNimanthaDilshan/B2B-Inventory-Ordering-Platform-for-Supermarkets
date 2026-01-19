@@ -17,7 +17,7 @@ const protect = async (req, res, next) => {
       // 2. Verify token
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-      // 3. Fetch user from DB (only needed fields)
+      // 3. Fetch user from DB
       const user = await User.findById(decoded.id).select(
         "role district isActive"
       );
@@ -41,6 +41,13 @@ const protect = async (req, res, next) => {
 
       next();
     } catch (error) {
+      // ✅ IMPORTANT FIX: handle expired token clearly
+      if (error.name === "TokenExpiredError") {
+        return res.status(401).json({
+          message: "Session expired. Please login again.",
+        });
+      }
+
       console.error("Token verification failed:", error);
       return res.status(401).json({ message: "Not authorized, token failed" });
     }
