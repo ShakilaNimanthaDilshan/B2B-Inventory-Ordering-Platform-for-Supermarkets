@@ -443,7 +443,7 @@ export default function SupermarketDashboard() {
   );
 }
 
-// ✅ Updated Header with Navigation
+// ✅ Updated Header with Navigatio
 function Header({ q, setQ, count, me, meLoading, cartCount, onCart }) {
   const navigate = useNavigate(); 
 
