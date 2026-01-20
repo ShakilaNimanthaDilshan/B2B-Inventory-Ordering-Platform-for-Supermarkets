@@ -1,4 +1,3 @@
-// backend/routes/adminRoutes.js
 const express = require("express");
 const router = express.Router();
 
@@ -11,9 +10,10 @@ const {
   getStats,
   getUsers,
   getUsersReport,
+  deleteUserPermanently,
 } = require("../controllers/adminController");
 
-// ✅ STEP 3 — Correct middleware imports
+// ✅ Middleware (single source of truth)
 const { protect, adminOnly } = require("../middleware/authMiddleware");
 
 // ===============================
@@ -40,21 +40,21 @@ router.get("/users", protect, adminOnly, getUsers);
 // ===============================
 // 🚫 Deactivate user
 // ===============================
-router.put(
-  "/users/:id/deactivate",
-  protect,
-  adminOnly,
-  deactivateUser
-);
+router.put("/users/:id/deactivate", protect, adminOnly, deactivateUser);
 
 // ===============================
 // ♻️ Activate user
 // ===============================
-router.put(
-  "/users/:id/activate",
-  protect,
-  adminOnly,
-  activateUser
+router.put("/users/:id/activate", protect, adminOnly, activateUser);
+
+// ===============================
+// 🗑️ PERMANENT DELETE (ADMIN ONLY) ✅ STEP 2 PASSED
+// ===============================
+router.delete(
+  "/users/:id/permanent",   // ✅ EXACT PATH
+  protect,                  // = authMiddleware
+  adminOnly,                // = adminMiddleware
+  deleteUserPermanently
 );
 
 // ===============================

@@ -27,7 +27,7 @@ const AdminUsersPage = () => {
     }
   };
 
-  // 🚫 Deactivate user
+  // 🚫 Deactivate user (soft remove)
   const handleDeactivate = async (userId) => {
     const confirmRemove = window.confirm(
       "Are you sure you want to remove this user's access?"
@@ -59,6 +59,23 @@ const AdminUsersPage = () => {
     }
   };
 
+  // ❌❌ PERMANENT DELETE (NEW)
+  const handlePermanentDelete = async (userId) => {
+    const confirmDelete = window.confirm(
+      "⚠️ WARNING!\n\nThis will PERMANENTLY delete the user.\nThis action CANNOT be undone.\n\nDo you want to continue?"
+    );
+
+    if (!confirmDelete) return;
+
+    try {
+      await api.delete(`/admin/users/${userId}/permanent`);
+      alert("User permanently deleted");
+      fetchUsers();
+    } catch (error) {
+      alert(error.response?.data?.message || "Failed to permanently delete user");
+    }
+  };
+
   useEffect(() => {
     fetchUsers();
     // eslint-disable-next-line
@@ -68,7 +85,7 @@ const AdminUsersPage = () => {
     <div className="admin-page">
       <h2 className="admin-header-title">Manage Suppliers & Supermarkets</h2>
       <p className="admin-header-subtitle">
-        View, deactivate, and reactivate system users.
+        View, deactivate, reactivate, or permanently delete system users.
       </p>
 
       {/* Filters */}
@@ -143,22 +160,34 @@ const AdminUsersPage = () => {
                   <td>{new Date(u.createdAt).toLocaleString()}</td>
 
                   <td>
+                    {/* Prevent actions on admins */}
                     {u.role !== "admin" && (
-                      u.isActive ? (
+                      <>
+                        {u.isActive ? (
+                          <button
+                            className="btn btn-danger"
+                            onClick={() => handleDeactivate(u._id)}
+                          >
+                            Remove
+                          </button>
+                        ) : (
+                          <button
+                            className="btn btn-success"
+                            onClick={() => handleActivate(u._id)}
+                          >
+                            Reactivate
+                          </button>
+                        )}
+
+                        {/* 🔥 Permanent delete */}
                         <button
                           className="btn btn-danger"
-                          onClick={() => handleDeactivate(u._id)}
+                          style={{ marginLeft: "8px", backgroundColor: "#b00020" }}
+                          onClick={() => handlePermanentDelete(u._id)}
                         >
-                          Remove
+                          Delete Permanently
                         </button>
-                      ) : (
-                        <button
-                          className="btn btn-success"
-                          onClick={() => handleActivate(u._id)}
-                        >
-                          Reactivate
-                        </button>
-                      )
+                      </>
                     )}
                   </td>
                 </tr>

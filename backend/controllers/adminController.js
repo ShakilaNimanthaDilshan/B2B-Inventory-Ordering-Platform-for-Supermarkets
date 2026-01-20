@@ -27,8 +27,6 @@ const approveUser = async (req, res) => {
 
     user.isApproved = true;
     user.isActive = true;
-
-    // ⚠️ approve is part of onboarding → validation is OK here
     await user.save();
 
     res.json({
@@ -75,14 +73,10 @@ const rejectUser = async (req, res) => {
 };
 
 /* =========================
-   DEACTIVATE USER ✅ FIXED
+   DEACTIVATE USER
 ========================= */
 const deactivateUser = async (req, res) => {
   try {
-    if (!req.user) {
-      return res.status(401).json({ message: "Not authorized" });
-    }
-
     const user = await User.findById(req.params.id);
     if (!user) {
       return res.status(404).json({ message: "User not found" });
@@ -94,7 +88,6 @@ const deactivateUser = async (req, res) => {
         .json({ message: "Admin cannot be deactivated" });
     }
 
-    // ✅ IMPORTANT FIX: bypass validation
     await User.updateOne(
       { _id: req.params.id },
       { $set: { isActive: false } }
@@ -108,7 +101,7 @@ const deactivateUser = async (req, res) => {
 };
 
 /* =========================
-   ACTIVATE USER ✅ FIXED
+   ACTIVATE USER
 ========================= */
 const activateUser = async (req, res) => {
   try {
@@ -117,7 +110,6 @@ const activateUser = async (req, res) => {
       return res.status(404).json({ message: "User not found" });
     }
 
-    // ✅ IMPORTANT FIX: bypass validation
     await User.updateOne(
       { _id: req.params.id },
       { $set: { isActive: true } }
@@ -131,15 +123,41 @@ const activateUser = async (req, res) => {
 };
 
 /* =========================
+   PERMANENT DELETE USER 🔥
+========================= */
+const deleteUserPermanently = async (req, res) => {
+  try {
+    const userId = req.params.id;
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // ❗ Extra safety: prevent deleting admins
+    if (user.role === "admin") {
+      return res
+        .status(403)
+        .json({ message: "Cannot delete admin users" });
+    }
+
+    await User.findByIdAndDelete(userId);
+
+    res.json({ message: "User permanently deleted" });
+  } catch (error) {
+    console.error("deleteUserPermanently error:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+/* =========================
    DASHBOARD STATS
 ========================= */
 const getStats = async (req, res) => {
   try {
     const totalUsers = await User.countDocuments();
     const totalSuppliers = await User.countDocuments({ role: "supplier" });
-    const totalSupermarkets = await User.countDocuments({
-      role: "supermarket",
-    });
+    const totalSupermarkets = await User.countDocuments({ role: "supermarket" });
     const pendingUsers = await User.countDocuments({ isApproved: false });
     const approvedUsers = await User.countDocuments({ isApproved: true });
     const activeUsers = await User.countDocuments({ isActive: true });
@@ -161,7 +179,7 @@ const getStats = async (req, res) => {
 };
 
 /* =========================
-   GET USERS (FILTERABLE)
+   GET USERS
 ========================= */
 const getUsers = async (req, res) => {
   try {
@@ -218,6 +236,7 @@ module.exports = {
   rejectUser,
   deactivateUser,
   activateUser,
+  deleteUserPermanently,
   getStats,
   getUsers,
   getUsersReport,
